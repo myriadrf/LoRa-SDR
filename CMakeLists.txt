@@ -7,6 +7,16 @@ project(LoRa_Blocks CXX)
 find_package(Pothos CONFIG REQUIRED)
 
 ########################################################################
+## Compiler specifics
+########################################################################
+enable_language(C)
+include(CheckIncludeFiles)
+CHECK_INCLUDE_FILES(alloca.h HAS_ALLOCA_H)
+if(HAS_ALLOCA_H)
+    add_definitions(-DHAS_ALLOCA_H)
+endif(HAS_ALLOCA_H)
+
+########################################################################
 ## BTLE blocks
 ########################################################################
 POTHOS_MODULE_UTIL(
