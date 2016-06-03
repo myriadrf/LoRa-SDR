@@ -8,7 +8,7 @@
 #include "LoRaDetector.hpp"
 
 /***********************************************************************
- * |PothosDoc Lora Demod
+ * |PothosDoc LoRa Demod
  *
  * Demodulate LoRa packets from a complex sample stream into symbols.
  *
@@ -33,18 +33,12 @@
  * The dec debug port outputs the LoRa signal downconverted
  * by a locally generated chirp with the same annotation labels as the raw output.
  *
- * |category /Demod
+ * |category /LoRa
  * |keywords lora
  *
  * |param sf[Spread factor] The spreading factor controls the symbol spread.
  * Each symbol will occupy 2^SF number of samples given the waveform BW.
  * |default 8
- * |option 7
- * |option 8
- * |option 9
- * |option 10
- * |option 11
- * |option 12
  *
  * |param sync[Sync word] The sync word is a 2-nibble, 2-symbol sync value.
  * The sync word is encoded after the up-chirps and before the down-chirps.
@@ -201,7 +195,7 @@ public:
             total = N;
             _chirpTable = _upChirpTable.data();
             _id = "";
-            _outSymbols = Pothos::BufferChunk(typeid(short), _mtu);
+            _outSymbols = Pothos::BufferChunk(typeid(int16_t), _mtu);
         } break;
 
         ////////////////////////////////////////////////////////////////
@@ -219,7 +213,7 @@ public:
         ////////////////////////////////////////////////////////////////
         {
             total = N;
-            _outSymbols.as<short *>()[_symCount] = short(value);
+            _outSymbols.as<int16_t *>()[_symCount] = int16_t(value);
             _symCount++;
             if (_symCount >= _mtu)
             {

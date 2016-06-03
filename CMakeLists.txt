@@ -23,6 +23,9 @@ POTHOS_MODULE_UTIL(
     TARGET LoRa_Blocks
     SOURCES
         LoRaDemod.cpp
+        LoRaEncoder.cpp
+        LoRaDecoder.cpp
+        LoRaTest.cpp
     DESTINATION lora
     ENABLE_DOCS
 )
