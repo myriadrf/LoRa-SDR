@@ -61,7 +61,7 @@ public:
         auto pkt = msg.extract<Pothos::Packet>();
         size_t numSymbols = pkt.payload.elements();
         numSymbols = PPM*((numSymbols+(PPM-1))/PPM);
-        std::vector<unsigned short> symbols(numSymbols);
+        std::vector<uint16_t> symbols(numSymbols);
         std::memcpy(symbols.data(), pkt.payload.as<const void *>(), pkt.payload.length);
 
         //gray encode, when SF > PPM, depad the LSBs
@@ -89,17 +89,28 @@ public:
 
         //decode each codeword as 2 bytes with correction
         bool error = false;
-        std::vector<unsigned char> bytes(codewords.size()/2);
+        std::vector<uint8_t> bytes(codewords.size()/2);
         for (size_t i = 0; i < bytes.size(); i++)
         {
             bytes[i] = decodeHamming84(codewords[i*2+0], error) << 4;
             bytes[i] |= decodeHamming84(codewords[i*2+1], error) & 0xf;
         }
+        if (error) return;
+
+        //undo the whitening
+        SX1232RadioComputeWhitening(bytes.data(), bytes.size());
+
+        //header and crc
+        size_t length = bytes[0];
+        if (length < 2) return;
+        if (length > bytes.size()) return;
+        uint8_t crc = checksum8(bytes.data(), length-1);
+        if (crc != bytes[length-1]) return;
 
         //post the output bytes
         Pothos::Packet out;
-        out.payload = Pothos::BufferChunk(typeid(uint8_t), bytes.size());
-        std::memcpy(out.payload.as<void *>(), bytes.data(), out.payload.length);
+        out.payload = Pothos::BufferChunk(typeid(uint8_t), length-2);
+        std::memcpy(out.payload.as<void *>(), bytes.data()+1, out.payload.length);
         outPort->postMessage(out);
     }
 

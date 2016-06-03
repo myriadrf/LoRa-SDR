@@ -1,4 +1,46 @@
 /***********************************************************************
+ * Simple 8-bit checksum routine
+ **********************************************************************/
+static inline uint8_t checksum8(const uint8_t *p, const size_t len)
+{
+    uint8_t acc = 0;
+    for (size_t i = 0; i < len; i++)
+    {
+        acc = (acc >> 1) + ((acc & 0x1) << 7); //rotate
+        acc += p[i]; //add
+    }
+    return acc;
+}
+
+/***********************************************************************
+ *  http://www.semtech.com/images/datasheet/AN1200.18_AG.pdf
+ **********************************************************************/
+
+static inline void SX1232RadioComputeWhitening( uint8_t *buffer, uint16_t bufferSize )
+{
+    uint8_t WhiteningKeyMSB; // Global variable so the value is kept after starting the
+    uint8_t WhiteningKeyLSB; // de-whitening process
+    WhiteningKeyMSB = 0x01; // Init value for the LFSR, these values should be initialize only
+    WhiteningKeyLSB = 0xFF; // at the start of a whitening or a de-whitening process
+    // *buffer is a char pointer indicating the data to be whiten / de-whiten
+    // buffersize is the number of char to be whiten / de-whiten
+    // >> The whitened / de-whitened data are directly placed into the pointer
+    uint8_t i = 0;
+    uint16_t j = 0;
+    uint8_t WhiteningKeyMSBPrevious = 0; // 9th bit of the LFSR
+    for( j = 0; j < bufferSize; j++ )     // byte counter
+    {
+        buffer[j] ^= WhiteningKeyLSB;   // XOR between the data and the whitening key
+        for( i = 0; i < 8; i++ )    // 8-bit shift between each byte
+        {
+            WhiteningKeyMSBPrevious = WhiteningKeyMSB;
+            WhiteningKeyMSB = ( WhiteningKeyLSB & 0x01 ) ^ ( ( WhiteningKeyLSB >> 5 ) & 0x01 );
+            WhiteningKeyLSB= ( ( WhiteningKeyLSB >> 1 ) & 0xFF ) | ( ( WhiteningKeyMSBPrevious << 7 ) & 0x80 );
+        }
+    }
+}
+
+/***********************************************************************
  *  https://en.wikipedia.org/wiki/Gray_code
  **********************************************************************/
 

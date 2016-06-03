@@ -23,7 +23,7 @@ POTHOS_TEST_BLOCK("/lora/tests", test_encoder_to_decoder)
     testPlan->set("enablePackets", true);
     testPlan->set("minValue", 0);
     testPlan->set("maxValue", 255);
-    testPlan->set("minBufferSize", 128);
+    testPlan->set("minBufferSize", 8);
     testPlan->set("maxBufferSize", 128);
     auto expected = feeder.callProxy("feedTestPlan", testPlan);
 

@@ -59,21 +59,28 @@ public:
         //extract the input bytes
         auto msg = inPort->popMessage();
         auto pkt = msg.extract<Pothos::Packet>();
-        auto bytes = pkt.payload.as<const int8_t *>();
-        const size_t numBytes = pkt.payload.length;
-        size_t numCodewords = numBytes*2;
+        std::vector<uint8_t> bytes(pkt.payload.length+2);
+        std::memcpy(bytes.data()+1, pkt.payload.as<const void *>(), pkt.payload.length);
+        size_t numCodewords = bytes.size()*2;
         numCodewords = PPM*((numCodewords+(PPM-1))/PPM);
+
+        //add header and CRC
+        bytes[0] = bytes.size();
+        bytes[bytes.size()-1] = checksum8(bytes.data(), bytes.size()-1);
+
+        //perform whitening
+        SX1232RadioComputeWhitening(bytes.data(), bytes.size());
 
         //encode each byte as 2 codeword bytes
         std::vector<unsigned char> codewords(numCodewords);
-        for (size_t i = 0; i < numBytes; i++)
+        for (size_t i = 0; i < bytes.size(); i++)
         {
             codewords[i*2+0] = encodeHamming84(bytes[i] >> 4);
             codewords[i*2+1] = encodeHamming84(bytes[i] & 0xf);
         }
 
         //interleave the codewords bits into symbols
-        std::vector<unsigned short> symbols(codewords.size());
+        std::vector<uint16_t> symbols(codewords.size());
         for (size_t s = 0; s < symbols.size()/PPM; s++)
         {
             const size_t off = s*PPM;
