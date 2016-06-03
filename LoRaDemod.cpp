@@ -90,8 +90,8 @@ public:
             double phase = (2*(i+N/2)*M_PI)/N;
             phaseAccum += phase;
             auto entry = std::polar(1.0, phaseAccum);
-            entry = std::conj(entry); //avoids conjugate later
-            _chirpTable.push_back(std::complex<float>(entry));
+            _upChirpTable.push_back(std::complex<float>(std::conj(entry)));
+            _downChirpTable.push_back(std::complex<float>(entry));
         }
     }
 
@@ -112,6 +112,8 @@ public:
 
     void activate(void)
     {
+        _state = STATE_FRAMESYNC;
+        _chirpTable = _upChirpTable.data();
     }
 
     void work(void)
@@ -121,10 +123,12 @@ public:
         if (_rawPort->elements() < N*2) return;
         if (_decPort->elements() < N*2) return;
 
+        size_t total = 0;
         auto inBuff = inPort->buffer().as<const std::complex<float> *>();
         auto rawBuff = _rawPort->buffer().as<std::complex<float> *>();
         auto decBuff = _decPort->buffer().as<std::complex<float> *>();
 
+        //process the available symbol
         for (size_t i = 0; i < N; i++)
         {
             auto samp = inBuff[i];
@@ -133,26 +137,139 @@ public:
             decBuff[i] = decd;
             _detector.feed(i, decd);
         }
+        auto value = _detector.detect();
 
-        auto freqError = _detector.detect();
+        switch (_state)
+        {
+        ////////////////////////////////////////////////////////////////
+        case STATE_FRAMESYNC:
+        ////////////////////////////////////////////////////////////////
+        {
+            //format as observed from inspecting RN2483
+            bool syncd = (_prevValue+1)/2 == 0;
+            bool match0 = (value+4)/8 == unsigned(_sync>>4);
+            bool match1 = false;
 
-        inPort->consume(N-freqError);
-        _rawPort->produce(N-freqError);
-        _decPort->produce(N-freqError);
-        _decPort->postLabel(Pothos::Label("x", Pothos::Object(), 0));
+            //if the symbol matches sync word0 then check sync word1 as well
+            //otherwise assume its the frame sync and adjust for frequency error
+            if (syncd and match0)
+            {
+                for (size_t i = 0; i < N; i++)
+                {
+                    auto samp = inBuff[i + N];
+                    auto decd = samp*_chirpTable[i];
+                    rawBuff[i+N] = samp;
+                    decBuff[i+N] = decd;
+                    _detector.feed(i, decd);
+                }
+                auto value1 = _detector.detect();
+                //format as observed from inspecting RN2483
+                match1 = (value1+4)/8 == (_sync & 0xf);
+            }
+
+            if (syncd and match0 and match1)
+            {
+                total = 2*N;
+                _state = STATE_DOWNCHIRP0;
+                _chirpTable = _downChirpTable.data();
+                _id = "SYNC";
+            }
+
+            //otherwise its a frequency error
+            else
+            {
+                total = N - value;
+                _id = "X";
+            }
+
+        } break;
+
+        ////////////////////////////////////////////////////////////////
+        case STATE_DOWNCHIRP0:
+        ////////////////////////////////////////////////////////////////
+        {
+            _state = STATE_DOWNCHIRP1;
+            total = N;
+            _id = "DC";
+        } break;
+
+        ////////////////////////////////////////////////////////////////
+        case STATE_DOWNCHIRP1:
+        ////////////////////////////////////////////////////////////////
+        {
+            _state = STATE_QUARTERCHIRP;
+            total = N;
+            _chirpTable = _upChirpTable.data();
+            _id = "";
+            _outSymbols = Pothos::BufferChunk(typeid(short), _mtu);
+        } break;
+
+        ////////////////////////////////////////////////////////////////
+        case STATE_QUARTERCHIRP:
+        ////////////////////////////////////////////////////////////////
+        {
+            _state = STATE_DATASYMBOLS;
+            total = N/4;
+            _symCount = 0;
+            _id = "QC";
+        } break;
+
+        ////////////////////////////////////////////////////////////////
+        case STATE_DATASYMBOLS:
+        ////////////////////////////////////////////////////////////////
+        {
+            total = N;
+            _outSymbols.as<short *>()[_symCount] = short(value);
+            _symCount++;
+            if (_symCount >= _mtu)
+            {
+                Pothos::Packet pkt;
+                pkt.payload = _outSymbols;
+                this->output(0)->postMessage(pkt);
+                _state = STATE_FRAMESYNC;
+            }
+            _id = "S";
+        } break;
+
+        }
+
+        if (not _id.empty())
+        {
+            _rawPort->postLabel(Pothos::Label(_id, Pothos::Object(), 0));
+            _decPort->postLabel(Pothos::Label(_id, Pothos::Object(), 0));
+        }
+        inPort->consume(total);
+        _rawPort->produce(total);
+        _decPort->produce(total);
+        _prevValue = value;
     }
 
 private:
     //configuration
     const size_t N;
     LoRaDetector<float> _detector;
-    std::vector<std::complex<float>> _chirpTable;
+    std::complex<float> *_chirpTable;
+    std::vector<std::complex<float>> _upChirpTable;
+    std::vector<std::complex<float>> _downChirpTable;
     unsigned char _sync;
     size_t _mtu;
     Pothos::OutputPort *_rawPort;
     Pothos::OutputPort *_decPort;
 
     //state
+    enum LoraDemodState
+    {
+        STATE_FRAMESYNC,
+        STATE_DOWNCHIRP0,
+        STATE_DOWNCHIRP1,
+        STATE_QUARTERCHIRP,
+        STATE_DATASYMBOLS,
+    };
+    LoraDemodState _state;
+    size_t _symCount;
+    Pothos::BufferChunk _outSymbols;
+    std::string _id;
+    short _prevValue;
 };
 
 static Pothos::BlockRegistry registerLoRaDemod(
