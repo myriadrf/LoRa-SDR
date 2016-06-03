@@ -14,8 +14,8 @@
  *
  * <h2>Input format</h2>
  *
- * The input sample stream should be down converted from the specified
- * carrier frequency and at the specified LoRa BW parameter.
+ * The input port 0 accepts a complex sample stream of modulated chirps
+ * received at the specified bandwidth and carrier frequency.
  *
  * <h2>Output format</h2>
  *

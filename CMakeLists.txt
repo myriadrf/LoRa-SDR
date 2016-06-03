@@ -17,12 +17,13 @@ if(HAS_ALLOCA_H)
 endif(HAS_ALLOCA_H)
 
 ########################################################################
-## BTLE blocks
+## LoRa blocks
 ########################################################################
 POTHOS_MODULE_UTIL(
     TARGET LoRa_Blocks
     SOURCES
         LoRaDemod.cpp
+        LoRaMod.cpp
         LoRaEncoder.cpp
         LoRaDecoder.cpp
         LoRaTest.cpp
