@@ -244,6 +244,9 @@ public:
 
         }
 
+        //keep phase in range
+        while (_phaseAccum > 2*M_PI) _phaseAccum -= 2*M_PI;
+
         if (not _id.empty())
         {
             outPort->postLabel(Pothos::Label(_id, Pothos::Object(), 0));

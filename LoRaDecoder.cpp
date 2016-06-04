@@ -73,7 +73,6 @@ public:
 
         //deinterleave the symbols into codewords
         std::vector<uint16_t> codewords(symbols.size());
-        /*
         for (size_t off = 0; off < symbols.size(); off+=PPM)
         {
             for (size_t k = 0; k < 4 + RDD; k++)
@@ -86,8 +85,7 @@ public:
                 }
             }
         }
-        */
-        for (size_t i = 0; i < codewords.size(); i++) codewords[i] = symbols[i];
+        //for (size_t i = 0; i < codewords.size(); i++) codewords[i] = symbols[i];
 
         //decode each codeword as 2 bytes with correction
         bool error = false;

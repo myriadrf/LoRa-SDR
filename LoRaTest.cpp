@@ -48,15 +48,16 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
     auto registry = env->findProxy("Pothos/BlockRegistry");
 
     auto feeder = registry.callProxy("/blocks/feeder_source", "uint8");
-    auto encoder = registry.callProxy("/lora/lora_encoder", 8);
-    auto mod = registry.callProxy("/lora/lora_mod", 8);
+    auto encoder = registry.callProxy("/lora/lora_encoder", 10);
+    auto mod = registry.callProxy("/lora/lora_mod", 10);
     auto adder = registry.callProxy("/comms/arithmetic", "complex_float32", "ADD");
     auto noise = registry.callProxy("/comms/noise_source", "complex_float32");
-    auto demod = registry.callProxy("/lora/lora_demod", 8);
-    auto decoder = registry.callProxy("/lora/lora_decoder", 8);
+    auto demod = registry.callProxy("/lora/lora_demod", 10);
+    auto decoder = registry.callProxy("/lora/lora_decoder", 10);
     auto collector = registry.callProxy("/blocks/collector_sink", "uint8");
 
-    noise.callVoid("setAmplitude", 0.1);
+    noise.callVoid("setAmplitude", 1.0);
+    noise.callVoid("setWaveform", "NORMAL");
     mod.callVoid("setPadding", 256*2);
     demod.callVoid("setMTU", 256);
 
@@ -65,8 +66,8 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
     testPlan->set("enablePackets", true);
     testPlan->set("minValue", 0);
     testPlan->set("maxValue", 255);
-    testPlan->set("minBuffers", 1);
-    testPlan->set("maxBuffers", 1);
+    testPlan->set("minBuffers", 5);
+    testPlan->set("maxBuffers", 5);
     testPlan->set("minBufferSize", 8);
     testPlan->set("maxBufferSize", 128);
     auto expected = feeder.callProxy("feedTestPlan", testPlan);
