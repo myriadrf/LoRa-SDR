@@ -34,17 +34,32 @@
  * The sync word is encoded after the up-chirps and before the down-chirps.
  * |default 0x12
  *
+ * |param padding[Padding] Pad out the end of a packet with zeros.
+ * This is mostly useful for simulation purposes, though some padding
+ * may be desirable to flush samples through the radio transmitter.
+ * |units symbols
+ * |default 1
+ *
+ * |param ampl[Amplitude] The digital transmit amplitude.
+ * |default 0.3
+ *
  * |factory /lora/lora_mod(sf)
  * |setter setSync(sync)
+ * |setter setPadding(padding)
+ * |setter setAmplitude(ampl)
  **********************************************************************/
 class LoRaMod : public Pothos::Block
 {
 public:
     LoRaMod(const size_t sf):
         N(1 << sf),
-        _sync(0)
+        _sync(0x12),
+        _padding(1),
+        _ampl(0.3f)
     {
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaMod, setSync));
+        this->registerCall(this, POTHOS_FCN_TUPLE(LoRaMod, setPadding));
+        this->registerCall(this, POTHOS_FCN_TUPLE(LoRaMod, setAmplitude));
         this->setupInput(0);
         this->setupOutput(0, typeid(std::complex<float>));
 
@@ -66,6 +81,16 @@ public:
         _sync = sync;
     }
 
+    void setPadding(const size_t padding)
+    {
+        _padding = padding;
+    }
+
+    void setAmplitude(const float ampl)
+    {
+        _ampl = ampl;
+    }
+
     void activate(void)
     {
         _state = STATE_WAITINPUT;
@@ -74,10 +99,15 @@ public:
     void work(void)
     {
         auto outPort = this->output(0);
-        if (outPort->elements() < N) return;
+        if (outPort->elements() < N)
+        {
+            outPort->popBuffer(outPort->elements());
+            return;
+        }
         auto samps = outPort->buffer().as<std::complex<float> *>();
         size_t i = 0;
 
+        //std::cout << "mod state " << int(_state) << std::endl;
         switch (_state)
         {
         ////////////////////////////////////////////////////////////////
@@ -102,7 +132,7 @@ public:
             for (i = 0; i < N; i++)
             {
                 _phaseAccum += _upChirpPhase[i];
-                samps[i] = std::polar(1.0f, _phaseAccum);
+                samps[i] = std::polar(_ampl, _phaseAccum);
             }
             if (_counter == 0) _state = STATE_SYNCWORD0;
             _id = "X";
@@ -117,7 +147,7 @@ public:
             for (i = 0; i < N; i++)
             {
                 _phaseAccum += _upChirpPhase[i] + freq;
-                samps[i] = std::polar(1.0f, _phaseAccum);
+                samps[i] = std::polar(_ampl, _phaseAccum);
             }
             _state = STATE_SYNCWORD1;
             _id = "SYNC";
@@ -132,7 +162,7 @@ public:
             for (i = 0; i < N; i++)
             {
                 _phaseAccum += _upChirpPhase[i] + freq;
-                samps[i] = std::polar(1.0f, _phaseAccum);
+                samps[i] = std::polar(_ampl, _phaseAccum);
             }
             _state = STATE_DOWNCHIRP0;
             _id = "";
@@ -145,7 +175,7 @@ public:
             for (i = 0; i < N; i++)
             {
                 _phaseAccum += _upChirpPhase[i];
-                samps[i] = std::polar(1.0f, -_phaseAccum);
+                samps[i] = std::polar(_ampl, -_phaseAccum);
             }
             _state = STATE_DOWNCHIRP1;
             _id = "DC";
@@ -158,7 +188,7 @@ public:
             for (i = 0; i < N; i++)
             {
                 _phaseAccum += _upChirpPhase[i];
-                samps[i] = std::polar(1.0f, -_phaseAccum);
+                samps[i] = std::polar(_ampl, -_phaseAccum);
             }
             _state = STATE_QUARTERCHIRP;
             _id = "";
@@ -171,7 +201,7 @@ public:
             for (i = 0; i < N/4; i++)
             {
                 _phaseAccum += _upChirpPhase[i];
-                samps[i] = std::polar(1.0f, -_phaseAccum);
+                samps[i] = std::polar(_ampl, -_phaseAccum);
             }
             _state = STATE_DATASYMBOLS;
             _counter = 0;
@@ -188,10 +218,28 @@ public:
             for (i = 0; i < N; i++)
             {
                 _phaseAccum += _upChirpPhase[i] + freq;
-                samps[i] = std::polar(1.0f, _phaseAccum);
+                samps[i] = std::polar(_ampl, _phaseAccum);
             }
-            if (_counter >= _payload.elements()) _state = STATE_WAITINPUT;
+            if (_counter >= _payload.elements())
+            {
+                _state = STATE_PADSYMBOLS;
+                _counter = 0;
+            }
             _id = "S";
+        } break;
+
+        ////////////////////////////////////////////////////////////////
+        case STATE_PADSYMBOLS:
+        ////////////////////////////////////////////////////////////////
+        {
+            _counter++;
+            for (i = 0; i < N; i++) samps[i] = 0.0f;
+            if (_counter >= _padding)
+            {
+                _state = STATE_WAITINPUT;
+                outPort->postLabel(Pothos::Label("txEnd", Pothos::Object(), N-1));
+            }
+            _id = "";
         } break;
 
         }
@@ -203,10 +251,24 @@ public:
         outPort->produce(i);
     }
 
+    //! Custom output buffer manager with slabs large enough for output chirp
+    Pothos::BufferManager::Sptr getOutputBufferManager(const std::string &name, const std::string &domain)
+    {
+        if (name == "0")
+        {
+            Pothos::BufferManagerArgs args;
+            args.bufferSize = N*sizeof(std::complex<float>);
+            return Pothos::BufferManager::make("generic", args);
+        }
+        return Pothos::Block::getOutputBufferManager(name, domain);
+    }
+
 private:
     //configuration
     const size_t N;
     unsigned char _sync;
+    size_t _padding;
+    float _ampl;
 
     //state
     enum LoraDemodState
@@ -219,6 +281,7 @@ private:
         STATE_DOWNCHIRP1,
         STATE_QUARTERCHIRP,
         STATE_DATASYMBOLS,
+        STATE_PADSYMBOLS,
     };
     LoraDemodState _state;
     size_t _counter;

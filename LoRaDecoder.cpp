@@ -71,11 +71,11 @@ public:
             if (_sf > PPM) sym >>= (_sf-PPM);
         }
 
-        //deinterleave the codewords bits into symbols
-        std::vector<unsigned short> codewords(symbols.size());
-        for (size_t s = 0; s < symbols.size()/PPM; s++)
+        //deinterleave the symbols into codewords
+        std::vector<uint16_t> codewords(symbols.size());
+        /*
+        for (size_t off = 0; off < symbols.size(); off+=PPM)
         {
-            const size_t off = s*PPM;
             for (size_t k = 0; k < 4 + RDD; k++)
             {
                 for (size_t m = 0; m < PPM; m++)
@@ -86,6 +86,8 @@ public:
                 }
             }
         }
+        */
+        for (size_t i = 0; i < codewords.size(); i++) codewords[i] = symbols[i];
 
         //decode each codeword as 2 bytes with correction
         bool error = false;
@@ -95,7 +97,7 @@ public:
             bytes[i] = decodeHamming84(codewords[i*2+0], error) << 4;
             bytes[i] |= decodeHamming84(codewords[i*2+1], error) & 0xf;
         }
-        if (error) return;
+        //if (error) return;
 
         //undo the whitening
         SX1232RadioComputeWhitening(bytes.data(), bytes.size());

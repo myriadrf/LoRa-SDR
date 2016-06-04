@@ -60,7 +60,7 @@ public:
     LoRaDemod(const size_t sf):
         N(1 << sf),
         _detector(N),
-        _sync(0),
+        _sync(0x12),
         _mtu(256)
     {
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDemod, setSync));
@@ -114,8 +114,16 @@ public:
     {
         auto inPort = this->input(0);
         if (inPort->elements() < N*2) return;
-        if (_rawPort->elements() < N*2) return;
-        if (_decPort->elements() < N*2) return;
+        if (_rawPort->elements() < N*2)
+        {
+            _rawPort->popBuffer(_rawPort->elements());
+            return;
+        }
+        if (_decPort->elements() < N*2)
+        {
+            _decPort->popBuffer(_decPort->elements());
+            return;
+        }
 
         size_t total = 0;
         auto inBuff = inPort->buffer().as<const std::complex<float> *>();
@@ -236,6 +244,30 @@ public:
         _rawPort->produce(total);
         _decPort->produce(total);
         _prevValue = value;
+    }
+
+    //! Custom output buffer manager with slabs large enough for debug output
+    Pothos::BufferManager::Sptr getOutputBufferManager(const std::string &name, const std::string &domain)
+    {
+        if (name == "raw" or name == "dec")
+        {
+            Pothos::BufferManagerArgs args;
+            args.bufferSize = N*2*sizeof(std::complex<float>);
+            return Pothos::BufferManager::make("generic", args);
+        }
+        return Pothos::Block::getOutputBufferManager(name, domain);
+    }
+
+    //! Custom input buffer manager with slabs large enough for fft input
+    Pothos::BufferManager::Sptr getInputBufferManager(const std::string &name, const std::string &domain)
+    {
+        if (name == "raw" or name == "dec")
+        {
+            Pothos::BufferManagerArgs args;
+            args.bufferSize = N*2*sizeof(std::complex<float>);
+            return Pothos::BufferManager::make("circular", args);
+        }
+        return Pothos::Block::getInputBufferManager(name, domain);
     }
 
 private:
