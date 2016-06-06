@@ -58,8 +58,8 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
 
     noise.callVoid("setAmplitude", 1.0);
     noise.callVoid("setWaveform", "NORMAL");
-    mod.callVoid("setPadding", 256*2);
-    demod.callVoid("setMTU", 256);
+    mod.callVoid("setPadding", 512);
+    demod.callVoid("setMTU", 512);
 
     //create a test plan
     Poco::JSON::Object::Ptr testPlan(new Poco::JSON::Object());

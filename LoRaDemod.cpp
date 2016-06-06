@@ -45,13 +45,20 @@
  * The demodulator ignores packets that do not match the sync word.
  * |default 0x12
  *
- * |param mtu[Symbol MTU] Produce MTU symbols after sync is found.
- * The demodulator does not inspect the payload and will simply
- * produce the specified number of symbols once synchronized.
+ * |param thresh[Threshold] The minimum required level in dB for the detector.
+ * The threshold level is used to enter and exit the demodulation state machine.
+ * |units dB
+ * |default 30.0
+ *
+ * |param mtu[Symbol MTU] Produce MTU at most symbols after sync is found.
+ * The demodulator does not inspect the payload and will produce at most
+ * the specified MTU number of symbols or less if the detector squelches.
+ * |units symbols
  * |default 256
  *
  * |factory /lora/lora_demod(sf)
  * |setter setSync(sync)
+ * |setter setThreshold(thresh)
  * |setter setMTU(mtu)
  **********************************************************************/
 class LoRaDemod : public Pothos::Block
@@ -61,9 +68,11 @@ public:
         N(1 << sf),
         _detector(N),
         _sync(0x12),
+        _thresh(1024),
         _mtu(256)
     {
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDemod, setSync));
+        this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDemod, setThreshold));
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDemod, setMTU));
         this->setupInput(0, typeid(std::complex<float>));
         this->setupOutput(0);
@@ -97,6 +106,11 @@ public:
     void setSync(const unsigned char sync)
     {
         _sync = sync;
+    }
+
+    void setThreshold(const double thresh_dB)
+    {
+        _thresh = float(std::pow(10.0, thresh_dB/10));
     }
 
     void setMTU(const size_t mtu)
@@ -139,7 +153,9 @@ public:
             decBuff[i] = decd;
             _detector.feed(i, decd);
         }
-        auto value = _detector.detect();
+        float power = 0;
+        auto value = _detector.detect(power);
+        const bool squelched = (power < _thresh);
 
         switch (_state)
         {
@@ -148,7 +164,7 @@ public:
         ////////////////////////////////////////////////////////////////
         {
             //format as observed from inspecting RN2483
-            bool syncd = (_prevValue+1)/2 == 0;
+            bool syncd = not squelched and (_prevValue+1)/2 == 0;
             bool match0 = (value+4)/8 == unsigned(_sync>>4);
             bool match1 = false;
 
@@ -164,7 +180,7 @@ public:
                     decBuff[i+N] = decd;
                     _detector.feed(i, decd);
                 }
-                auto value1 = _detector.detect();
+                auto value1 = _detector.detect(power);
                 //format as observed from inspecting RN2483
                 match1 = (value1+4)/8 == (_sync & 0xf);
             }
@@ -178,10 +194,17 @@ public:
             }
 
             //otherwise its a frequency error
-            else
+            else if (not squelched)
             {
                 total = N - value;
-                _id = "X";
+                _id = "FS";
+            }
+
+            //just noise
+            else
+            {
+                total = N;
+                _id = "";
             }
 
         } break;
@@ -223,10 +246,11 @@ public:
             total = N;
             _outSymbols.as<int16_t *>()[_symCount] = int16_t(value);
             _symCount++;
-            if (_symCount >= _mtu)
+            if (_symCount >= _mtu or squelched)
             {
                 Pothos::Packet pkt;
                 pkt.payload = _outSymbols;
+                pkt.payload.length = _symCount*sizeof(int16_t);
                 this->output(0)->postMessage(pkt);
                 _state = STATE_FRAMESYNC;
             }
@@ -278,6 +302,7 @@ private:
     std::vector<std::complex<float>> _upChirpTable;
     std::vector<std::complex<float>> _downChirpTable;
     unsigned char _sync;
+    float _thresh;
     size_t _mtu;
     Pothos::OutputPort *_rawPort;
     Pothos::OutputPort *_decPort;

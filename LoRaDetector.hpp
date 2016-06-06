@@ -24,7 +24,7 @@ public:
     }
 
     //! calculates argmax(abs(fft(input)))
-    size_t detect(void)
+    size_t detect(Type &power)
     {
         _fft.transform(_fftInput.data(), _fftOutput.data());
         size_t maxIndex = 0;
@@ -41,6 +41,7 @@ public:
                 maxValue = mag2;
             }
         }
+        power = maxValue;
         return maxIndex;
     }
 

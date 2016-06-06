@@ -135,7 +135,7 @@ public:
                 samps[i] = std::polar(_ampl, _phaseAccum);
             }
             if (_counter == 0) _state = STATE_SYNCWORD0;
-            _id = "X";
+            _id = "FS";
         } break;
 
         ////////////////////////////////////////////////////////////////
