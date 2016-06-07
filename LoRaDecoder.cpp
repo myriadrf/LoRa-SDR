@@ -64,11 +64,16 @@ public:
         std::vector<uint16_t> symbols(numSymbols);
         std::memcpy(symbols.data(), pkt.payload.as<const void *>(), pkt.payload.length);
 
-        //gray encode, when SF > PPM, depad the LSBs
+        //gray encode, when SF > PPM, depad the LSBs with rounding
         for (auto &sym : symbols)
         {
+            if (_sf > PPM)
+            {
+                sym += (1 << (_sf-PPM))/2; //increment by 1/2
+                sym &= (1 << _sf)-1; //mask to keep lower bits
+                sym >>= (_sf-PPM); //down shift to PPM bits
+            }
             sym = binaryToGray16(sym);
-            if (_sf > PPM) sym >>= (_sf-PPM);
         }
 
         //deinterleave the symbols into codewords

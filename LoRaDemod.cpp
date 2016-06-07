@@ -48,7 +48,7 @@
  * |param thresh[Threshold] The minimum required level in dB for the detector.
  * The threshold level is used to enter and exit the demodulation state machine.
  * |units dB
- * |default 30.0
+ * |default 3.0
  *
  * |param mtu[Symbol MTU] Produce MTU at most symbols after sync is found.
  * The demodulator does not inspect the payload and will produce at most
@@ -68,7 +68,7 @@ public:
         N(1 << sf),
         _detector(N),
         _sync(0x12),
-        _thresh(1024),
+        _thresh(2),
         _mtu(256)
     {
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDemod, setSync));
@@ -216,6 +216,7 @@ public:
             _state = STATE_DOWNCHIRP1;
             total = N;
             _id = "DC";
+            _freqError = value;
         } break;
 
         ////////////////////////////////////////////////////////////////
@@ -227,6 +228,7 @@ public:
             _chirpTable = _upChirpTable.data();
             _id = "";
             _outSymbols = Pothos::BufferChunk(typeid(int16_t), _mtu);
+            _freqError = (_freqError + value)/2;
         } break;
 
         ////////////////////////////////////////////////////////////////
@@ -244,8 +246,7 @@ public:
         ////////////////////////////////////////////////////////////////
         {
             total = N;
-            _outSymbols.as<int16_t *>()[_symCount] = int16_t(value);
-            _symCount++;
+            _outSymbols.as<int16_t *>()[_symCount++] = int16_t(value);
             if (_symCount >= _mtu or squelched)
             {
                 Pothos::Packet pkt;
@@ -321,6 +322,7 @@ private:
     Pothos::BufferChunk _outSymbols;
     std::string _id;
     short _prevValue;
+    size_t _freqError;
 };
 
 static Pothos::BlockRegistry registerLoRaDemod(
