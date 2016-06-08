@@ -5,7 +5,6 @@
 #include <iostream>
 #include <complex>
 #include <cmath>
-#include "LoRaDetector.hpp"
 
 /***********************************************************************
  * |PothosDoc LoRa Mod
@@ -107,6 +106,7 @@ public:
         auto samps = outPort->buffer().as<std::complex<float> *>();
         size_t i = 0;
 
+        float phaseAccum = 0;
         //std::cout << "mod state " << int(_state) << std::endl;
         switch (_state)
         {
@@ -120,7 +120,7 @@ public:
             _payload = pkt.payload;
             _state = STATE_FRAMESYNC;
             _counter = 10;
-            _phaseAccum = 0;
+            phaseAccum = 0;
             _id = "";
         } break;
 
@@ -131,8 +131,8 @@ public:
             _counter--;
             for (i = 0; i < N; i++)
             {
-                _phaseAccum += _upChirpPhase[i];
-                samps[i] = std::polar(_ampl, _phaseAccum);
+                phaseAccum += _upChirpPhase[i];
+                samps[i] = std::polar(_ampl, phaseAccum);
             }
             if (_counter == 0) _state = STATE_SYNCWORD0;
             _id = "FS";
@@ -146,8 +146,8 @@ public:
             const float freq = (2*M_PI*sw0)/N;
             for (i = 0; i < N; i++)
             {
-                _phaseAccum += _upChirpPhase[i] + freq;
-                samps[i] = std::polar(_ampl, _phaseAccum);
+                phaseAccum += _upChirpPhase[i] + freq;
+                samps[i] = std::polar(_ampl, phaseAccum);
             }
             _state = STATE_SYNCWORD1;
             _id = "SYNC";
@@ -161,8 +161,8 @@ public:
             const float freq = (2*M_PI*sw1)/N;
             for (i = 0; i < N; i++)
             {
-                _phaseAccum += _upChirpPhase[i] + freq;
-                samps[i] = std::polar(_ampl, _phaseAccum);
+                phaseAccum += _upChirpPhase[i] + freq;
+                samps[i] = std::polar(_ampl, phaseAccum);
             }
             _state = STATE_DOWNCHIRP0;
             _id = "";
@@ -174,8 +174,8 @@ public:
         {
             for (i = 0; i < N; i++)
             {
-                _phaseAccum += _upChirpPhase[i];
-                samps[i] = std::polar(_ampl, -_phaseAccum);
+                phaseAccum += _upChirpPhase[i];
+                samps[i] = std::polar(_ampl, -phaseAccum);
             }
             _state = STATE_DOWNCHIRP1;
             _id = "DC";
@@ -187,8 +187,8 @@ public:
         {
             for (i = 0; i < N; i++)
             {
-                _phaseAccum += _upChirpPhase[i];
-                samps[i] = std::polar(_ampl, -_phaseAccum);
+                phaseAccum += _upChirpPhase[i];
+                samps[i] = std::polar(_ampl, -phaseAccum);
             }
             _state = STATE_QUARTERCHIRP;
             _id = "";
@@ -200,8 +200,8 @@ public:
         {
             for (i = 0; i < N/4; i++)
             {
-                _phaseAccum += _upChirpPhase[i];
-                samps[i] = std::polar(_ampl, -_phaseAccum);
+                phaseAccum += _upChirpPhase[i];
+                samps[i] = std::polar(_ampl, -phaseAccum);
             }
             _state = STATE_DATASYMBOLS;
             _counter = 0;
@@ -217,8 +217,8 @@ public:
 
             for (i = 0; i < N; i++)
             {
-                _phaseAccum += _upChirpPhase[i] + freq;
-                samps[i] = std::polar(_ampl, _phaseAccum);
+                phaseAccum += _upChirpPhase[i] + freq;
+                samps[i] = std::polar(_ampl, phaseAccum);
             }
             if (_counter >= _payload.elements())
             {
@@ -243,9 +243,6 @@ public:
         } break;
 
         }
-
-        //keep phase in range
-        while (_phaseAccum > 2*M_PI) _phaseAccum -= 2*M_PI;
 
         if (not _id.empty())
         {
@@ -290,7 +287,6 @@ private:
     size_t _counter;
     Pothos::BufferChunk _payload;
     std::vector<float> _upChirpPhase;
-    float _phaseAccum;
     std::string _id;
 };
 

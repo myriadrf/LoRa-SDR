@@ -36,8 +36,10 @@ class LoRaDecoder : public Pothos::Block
 {
 public:
     LoRaDecoder(const size_t sf):
-        _sf(sf)
+        _sf(sf),
+        _dropped(0)
     {
+        this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, getDropped));
         this->setupInput("0");
         this->setupOutput("0");
     }
@@ -45,6 +47,11 @@ public:
     static Block *make(const size_t sf)
     {
         return new LoRaDecoder(sf);
+    }
+
+    unsigned long long getDropped(void) const
+    {
+        return _dropped;
     }
 
     void work(void)
@@ -78,6 +85,7 @@ public:
 
         //deinterleave the symbols into codewords
         std::vector<uint16_t> codewords(symbols.size());
+        #if 1
         for (size_t off = 0; off < symbols.size(); off+=PPM)
         {
             for (size_t k = 0; k < 4 + RDD; k++)
@@ -90,7 +98,9 @@ public:
                 }
             }
         }
-        //for (size_t i = 0; i < codewords.size(); i++) codewords[i] = symbols[i];
+        #else
+        for (size_t i = 0; i < codewords.size(); i++) codewords[i] = symbols[i];
+        #endif
 
         //decode each codeword as 2 bytes with correction
         bool error = false;
@@ -107,10 +117,10 @@ public:
 
         //header and crc
         size_t length = bytes[0];
-        if (length < 2) return;
-        if (length > bytes.size()) return;
+        if (length < 2) return this->drop();
+        if (length > bytes.size()) return this->drop();
         uint8_t crc = checksum8(bytes.data(), length-1);
-        if (crc != bytes[length-1]) return;
+        if (crc != bytes[length-1]) return this->drop();
 
         //post the output bytes
         Pothos::Packet out;
@@ -120,7 +130,14 @@ public:
     }
 
 private:
+
+    void drop(void)
+    {
+        _dropped++;
+    }
+
     const size_t _sf;
+    unsigned long long _dropped;
 };
 
 static Pothos::BlockRegistry registerLoRaDecoder(

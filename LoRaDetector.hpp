@@ -18,7 +18,7 @@ public:
     }
 
     //! feed simply sets an input sample
-    void feed(const size_t i, const std::complex<float> &samp)
+    void feed(const size_t i, const std::complex<Type> &samp)
     {
         _fftInput[i] = samp;
     }

@@ -87,14 +87,15 @@ public:
         _decPort = this->output("dec");
 
         //generate chirp table
+        float phase = -M_PI;
         double phaseAccum = 0.0;
         for (size_t i = 0; i < N; i++)
         {
-            double phase = (2*(i+N/2)*M_PI)/N;
             phaseAccum += phase;
             auto entry = std::polar(1.0, phaseAccum);
             _upChirpTable.push_back(std::complex<float>(std::conj(entry)));
             _downChirpTable.push_back(std::complex<float>(entry));
+            phase += (2*M_PI)/N;
         }
     }
 
@@ -216,7 +217,9 @@ public:
             _state = STATE_DOWNCHIRP1;
             total = N;
             _id = "DC";
-            _freqError = value;
+            int error = value;
+            if (value > N/2) error -= N;
+            _freqError = error;
         } break;
 
         ////////////////////////////////////////////////////////////////
@@ -228,7 +231,10 @@ public:
             _chirpTable = _upChirpTable.data();
             _id = "";
             _outSymbols = Pothos::BufferChunk(typeid(int16_t), _mtu);
-            _freqError = (_freqError + value)/2;
+
+            int error = value;
+            if (value > N/2) error -= N;
+            _freqError = (_freqError + error)/2;
         } break;
 
         ////////////////////////////////////////////////////////////////
@@ -322,7 +328,7 @@ private:
     Pothos::BufferChunk _outSymbols;
     std::string _id;
     short _prevValue;
-    size_t _freqError;
+    int _freqError;
 };
 
 static Pothos::BlockRegistry registerLoRaDemod(

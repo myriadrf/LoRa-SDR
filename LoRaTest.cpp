@@ -56,7 +56,8 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
     auto decoder = registry.callProxy("/lora/lora_decoder", 10);
     auto collector = registry.callProxy("/blocks/collector_sink", "uint8");
 
-    noise.callVoid("setAmplitude", 1.0);
+    mod.callVoid("setAmplitude", 1.0);
+    noise.callVoid("setAmplitude", 4.0);
     noise.callVoid("setWaveform", "NORMAL");
     mod.callVoid("setPadding", 512);
     demod.callVoid("setMTU", 512);
@@ -87,6 +88,7 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
         //std::cout << topology.queryJSONStats() << std::endl;
     }
 
+    std::cout << "decoder dropped " << decoder.call<unsigned long long>("getDropped") << std::endl;
     std::cout << "verifyTestPlan" << std::endl;
     collector.callVoid("verifyTestPlan", expected);
 }

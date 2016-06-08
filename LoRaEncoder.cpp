@@ -81,6 +81,7 @@ public:
 
         //interleave the codewords into symbols
         std::vector<uint16_t> symbols(codewords.size());
+        #if 1
         for (size_t off = 0; off < symbols.size(); off+=PPM)
         {
             for (size_t k = 0; k < 4 + RDD; k++)
@@ -93,7 +94,9 @@ public:
                 }
             }
         }
-        //for (size_t i = 0; i < codewords.size(); i++) symbols[i] = codewords[i];
+        #else
+        for (size_t i = 0; i < codewords.size(); i++) symbols[i] = codewords[i];
+        #endif
 
         //gray decode, when SF > PPM, pad out LSBs
         for (auto &sym : symbols)
