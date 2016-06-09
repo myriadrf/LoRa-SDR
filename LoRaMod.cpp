@@ -213,6 +213,7 @@ public:
         ////////////////////////////////////////////////////////////////
         {
             const int sym = _payload.as<const uint16_t *>()[_counter++];
+            //if (_counter == 1) std::cout << "send sym0 " << sym << std::endl;
             const float freq = (2*M_PI*sym)/N;
 
             for (i = 0; i < N; i++)

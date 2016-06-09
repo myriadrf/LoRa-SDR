@@ -1,4 +1,12 @@
 /***********************************************************************
+ * Round functions
+ **********************************************************************/
+static inline unsigned roundUp(unsigned num, unsigned factor)
+{
+    return ((num + factor - 1) / factor) * factor;
+}
+
+/***********************************************************************
  * Simple 8-bit checksum routine
  **********************************************************************/
 static inline uint8_t checksum8(const uint8_t *p, const size_t len)
@@ -132,4 +140,99 @@ static inline unsigned char decodeHamming84(const unsigned char b, bool &error)
     }
 
     return (b2 << 0) | (b4 << 1) | (b5 << 2) | (b6 << 3);
+}
+
+
+/***********************************************************************
+ * Encode a 4 bit word into a 7 bits with parity
+ * https://en.wikipedia.org/wiki/Hamming_code
+ **********************************************************************/
+static inline unsigned char encodeHamming74(const unsigned char x)
+{
+    auto d0 = (x >> 0) & 0x1;
+    auto d1 = (x >> 1) & 0x1;
+    auto d2 = (x >> 2) & 0x1;
+    auto d3 = (x >> 3) & 0x1;
+
+    unsigned char b = 0;
+    b |= ((d0 + d1 + d3) & 0x1) << 0;
+    b |= ((d0 + d2 + d3) & 0x1) << 1;
+    b |= ((d0) & 0x1) << 2;
+    b |= ((d1 + d2 + d3) & 0x1) << 3;
+    b |= ((d1) & 0x1) << 4;
+    b |= ((d2) & 0x1) << 5;
+    b |= ((d3) & 0x1) << 6;
+    return b;
+}
+
+/***********************************************************************
+ * Decode 7 bits into a 4 bit word with single bit correction
+ **********************************************************************/
+static inline unsigned char decodeHamming74(const unsigned char b)
+{
+    auto b0 = (b >> 0) & 0x1;
+    auto b1 = (b >> 1) & 0x1;
+    auto b2 = (b >> 2) & 0x1;
+    auto b3 = (b >> 3) & 0x1;
+    auto b4 = (b >> 4) & 0x1;
+    auto b5 = (b >> 5) & 0x1;
+    auto b6 = (b >> 6) & 0x1;
+
+    auto p0 = (b0 + b2 + b4 + b6) & 0x1;
+    auto p1 = (b1 + b2 + b5 + b6) & 0x1;
+    auto p2 = (b3 + b4 + b5 + b6) & 0x1;
+
+    auto parity = (p0 << 0) | (p1 << 1) | (p2 << 2);
+    switch (parity & 0x7)
+    {
+    case 0: break; //no error
+    case 1: b0 = (~b0) & 0x1; break;
+    case 2: b1 = (~b1) & 0x1; break;
+    case 3: b2 = (~b2) & 0x1; break;
+    case 4: b3 = (~b3) & 0x1; break;
+    case 5: b4 = (~b4) & 0x1; break;
+    case 6: b5 = (~b5) & 0x1; break;
+    case 7: b6 = (~b6) & 0x1; break;
+    }
+
+    return (b2 << 0) | (b4 << 1) | (b5 << 2) | (b6 << 3);
+}
+
+/***********************************************************************
+ * Diagonal interleaver + deinterleaver
+ **********************************************************************/
+static inline void diagonalInterleave(const uint8_t *codewords, const size_t numCodewords, uint16_t *symbols, const size_t PPM, const size_t RDD)
+{
+    for (size_t x = 0; x < numCodewords/PPM; x++)
+    {
+        const size_t cwOff = x*PPM;
+        const size_t symOff = x*(4 + RDD);
+        for (size_t k = 0; k < 4 + RDD; k++)
+        {
+            for (size_t m = 0; m < PPM; m++)
+            {
+                const size_t i = (m-k+PPM)%PPM;
+                const auto bit = (codewords[cwOff + i] >> k) & 0x1;
+                symbols[symOff + k] |= (bit << m);
+            }
+        }
+    }
+}
+
+static inline void diagonalDeterleave(const uint16_t *symbols, const size_t numSymbols, uint8_t *codewords, const size_t PPM, const size_t RDD)
+{
+    for (size_t x = 0; x < numSymbols/(4 + RDD); x++)
+    {
+        const size_t cwOff = x*PPM;
+        const size_t symOff = x*(4 + RDD);
+        for (size_t k = 0; k < 4 + RDD; k++)
+        {
+            for (size_t m = 0; m < PPM; m++)
+            {
+                const size_t i = (m-k+PPM)%PPM;
+                const auto bit = (symbols[symOff + k] >> m) & 0x1;
+                codewords[cwOff + i] |= (bit << k);
+            }
+        }
+    }
 }

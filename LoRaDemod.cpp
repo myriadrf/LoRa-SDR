@@ -165,7 +165,7 @@ public:
         ////////////////////////////////////////////////////////////////
         {
             //format as observed from inspecting RN2483
-            bool syncd = not squelched and (_prevValue+1)/2 == 0;
+            bool syncd = not squelched and (_prevValue+4)/8 == 0;
             bool match0 = (value+4)/8 == unsigned(_sync>>4);
             bool match1 = false;
 
@@ -219,6 +219,7 @@ public:
             _id = "DC";
             int error = value;
             if (value > N/2) error -= N;
+            //std::cout << "error0 " << error << std::endl;
             _freqError = error;
         } break;
 
@@ -234,6 +235,7 @@ public:
 
             int error = value;
             if (value > N/2) error -= N;
+            //std::cout << "error1 " << error << std::endl;
             _freqError = (_freqError + error)/2;
         } break;
 
@@ -252,6 +254,7 @@ public:
         ////////////////////////////////////////////////////////////////
         {
             total = N;
+            //if (_symCount == 0) std::cout << "recv sym0 " << value << std::endl;
             _outSymbols.as<int16_t *>()[_symCount++] = int16_t(value);
             if (_symCount >= _mtu or squelched)
             {

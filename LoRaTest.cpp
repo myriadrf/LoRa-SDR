@@ -7,6 +7,89 @@
 #include <Pothos/Remote.hpp>
 #include <Poco/JSON/Object.h>
 #include <iostream>
+#include "LoRaCodes.hpp"
+
+POTHOS_TEST_BLOCK("/lora/tests", test_hamming)
+{
+    bool error;
+    unsigned char decoded;
+
+    //test hamming 74 with bit errors
+    for (size_t i = 0; i < 16; i++)
+    {
+        unsigned char byte = i & 0xff;
+        unsigned char encoded = encodeHamming74(byte);
+
+        //check no bit errors
+        decoded = decodeHamming74(encoded);
+        POTHOS_TEST_EQUAL(byte, decoded);
+
+        for (int bit0 = 0; bit0 < 8; bit0++)
+        {
+            //check 1 bit error
+            unsigned char encoded1err = encoded ^ (1 << bit0);
+            decoded = decodeHamming74(encoded1err);
+            POTHOS_TEST_EQUAL(byte, decoded);
+        }
+    }
+
+    //test hamming 84 with bit errors
+    for (size_t i = 0; i < 16; i++)
+    {
+        unsigned char byte = i & 0xff;
+        unsigned char encoded = encodeHamming84(byte);
+
+        //check no bit errors
+        error = false;
+        decoded = decodeHamming84(encoded, error);
+        POTHOS_TEST_TRUE(not error);
+        POTHOS_TEST_EQUAL(byte, decoded);
+
+        for (int bit0 = 0; bit0 < 8; bit0++)
+        {
+            //check 1 bit error
+            error = false;
+            unsigned char encoded1err = encoded ^ (1 << bit0);
+            decoded = decodeHamming84(encoded1err, error);
+            POTHOS_TEST_TRUE(not error);
+            POTHOS_TEST_EQUAL(byte, decoded);
+
+            for (int bit1 = 0; bit1 < 8; bit1++)
+            {
+                if (bit1 == bit0) continue;
+
+                //check 2 bit errors (cant correct, but can detect
+                error = false;
+                unsigned char encoded2err = encoded1err ^ (1 << bit1);
+                decoded = decodeHamming84(encoded2err, error);
+                POTHOS_TEST_TRUE(error);
+            }
+        }
+    }
+}
+
+POTHOS_TEST_BLOCK("/lora/tests", test_interleaver)
+{
+    for (size_t PPM = 7; PPM <= 12; PPM++)
+    {
+        std::cout << "Testing PPM " << PPM << std::endl;
+        for (size_t RDD = 0; RDD <= 4; RDD++)
+        {
+            std::cout << "  with RDD " << RDD << std::endl;
+            std::vector<uint8_t> inputCws(PPM);
+            const auto mask = (1 << (RDD+4))-1;
+            for (auto &x : inputCws) x = std::rand() & mask;
+
+            std::vector<uint16_t> symbols(((RDD+4)*inputCws.size())/PPM);
+            diagonalInterleave(inputCws.data(), inputCws.size(), symbols.data(), PPM, RDD);
+
+            std::vector<uint8_t> outputCws(inputCws.size());
+            diagonalDeterleave(symbols.data(), symbols.size(), outputCws.data(), PPM, RDD);
+
+            POTHOS_TEST_EQUALV(inputCws, outputCws);
+        }
+    }
+}
 
 POTHOS_TEST_BLOCK("/lora/tests", test_encoder_to_decoder)
 {
@@ -14,17 +97,24 @@ POTHOS_TEST_BLOCK("/lora/tests", test_encoder_to_decoder)
     auto registry = env->findProxy("Pothos/BlockRegistry");
 
     auto feeder = registry.callProxy("/blocks/feeder_source", "uint8");
-    auto encoder = registry.callProxy("/lora/lora_encoder", 8);
-    auto decoder = registry.callProxy("/lora/lora_decoder", 8);
+    auto encoder = registry.callProxy("/lora/lora_encoder");
+    auto decoder = registry.callProxy("/lora/lora_decoder");
     auto collector = registry.callProxy("/blocks/collector_sink", "uint8");
+
+    encoder.callVoid("setSpreadFactor", 10);
+    decoder.callVoid("setSpreadFactor", 10);
+    encoder.callVoid("setCodingRate", "4/8");
+    decoder.callVoid("setCodingRate", "4/8");
 
     //create a test plan
     Poco::JSON::Object::Ptr testPlan(new Poco::JSON::Object());
     testPlan->set("enablePackets", true);
     testPlan->set("minValue", 0);
     testPlan->set("maxValue", 255);
-    testPlan->set("minBufferSize", 8);
-    testPlan->set("maxBufferSize", 128);
+    testPlan->set("minBufferSize", 2);
+    testPlan->set("maxBufferSize", 2);
+    testPlan->set("minBuffers", 1);
+    testPlan->set("maxBuffers", 1);
     auto expected = feeder.callProxy("feedTestPlan", testPlan);
 
     //create tester topology
@@ -48,14 +138,18 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
     auto registry = env->findProxy("Pothos/BlockRegistry");
 
     auto feeder = registry.callProxy("/blocks/feeder_source", "uint8");
-    auto encoder = registry.callProxy("/lora/lora_encoder", 10);
+    auto encoder = registry.callProxy("/lora/lora_encoder");
     auto mod = registry.callProxy("/lora/lora_mod", 10);
     auto adder = registry.callProxy("/comms/arithmetic", "complex_float32", "ADD");
     auto noise = registry.callProxy("/comms/noise_source", "complex_float32");
     auto demod = registry.callProxy("/lora/lora_demod", 10);
-    auto decoder = registry.callProxy("/lora/lora_decoder", 10);
+    auto decoder = registry.callProxy("/lora/lora_decoder");
     auto collector = registry.callProxy("/blocks/collector_sink", "uint8");
 
+    encoder.callVoid("setSpreadFactor", 10);
+    decoder.callVoid("setSpreadFactor", 10);
+    encoder.callVoid("setCodingRate", "4/8");
+    decoder.callVoid("setCodingRate", "4/8");
     mod.callVoid("setAmplitude", 1.0);
     noise.callVoid("setAmplitude", 4.0);
     noise.callVoid("setWaveform", "NORMAL");
