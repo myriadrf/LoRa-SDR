@@ -114,8 +114,6 @@ POTHOS_TEST_BLOCK("/lora/tests", test_encoder_to_decoder)
             std::cout << "  with CR " << CR << std::endl;
             encoder.callVoid("setSpreadFactor", SF);
             decoder.callVoid("setSpreadFactor", SF);
-            encoder.callVoid("setSymbolSize", SF);
-            decoder.callVoid("setSymbolSize", SF);
             encoder.callVoid("setCodingRate", CR);
             decoder.callVoid("setCodingRate", CR);
 
@@ -168,8 +166,6 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
 
         encoder.callVoid("setSpreadFactor", SF);
         decoder.callVoid("setSpreadFactor", SF);
-        encoder.callVoid("setSymbolSize", SF);
-        decoder.callVoid("setSymbolSize", SF);
         encoder.callVoid("setCodingRate", CR);
         decoder.callVoid("setCodingRate", CR);
         mod.callVoid("setAmplitude", 1.0);
@@ -204,7 +200,7 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
             //std::cout << topology.queryJSONStats() << std::endl;
         }
 
-        std::cout << "decoder dropped " << decoder.call<unsigned long long>("dropped") << std::endl;
+        std::cout << "decoder dropped " << decoder.call<unsigned long long>("getDropped") << std::endl;
         std::cout << "verifyTestPlan" << std::endl;
         collector.callVoid("verifyTestPlan", expected);
     }

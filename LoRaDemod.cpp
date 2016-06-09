@@ -38,7 +38,7 @@
  *
  * |param sf[Spread factor] The spreading factor controls the symbol spread.
  * Each symbol will occupy 2^SF number of samples given the waveform BW.
- * |default 8
+ * |default 10
  *
  * |param sync[Sync word] The sync word is a 2-nibble, 2-symbol sync value.
  * The sync word is encoded after the up-chirps and before the down-chirps.
@@ -78,6 +78,8 @@ public:
         this->setupOutput(0);
         this->setupOutput("raw", typeid(std::complex<float>));
         this->setupOutput("dec", typeid(std::complex<float>));
+        this->registerSignal("error");
+        this->registerSignal("power");
 
         //use at most two input symbols available
         this->input(0)->setReserve(N*2);
@@ -237,6 +239,8 @@ public:
             if (value > N/2) error -= N;
             //std::cout << "error1 " << error << std::endl;
             _freqError = (_freqError + error)/2;
+            this->callVoid("error", _freqError);
+            this->callVoid("power", 10*log10(power));
         } break;
 
         ////////////////////////////////////////////////////////////////

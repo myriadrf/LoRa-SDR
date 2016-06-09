@@ -30,9 +30,13 @@
  * |param sf[Spread factor] The spreading factor sets the bits per symbol.
  * |default 10
  *
- * |param ppm[Symbol size] The size of the symbol set (_ppm <= SF).
+ * |param ppm[Symbol size] The size of the symbol set (_ppm &lt;= SF).
  * Specify _ppm less than the spread factor to use a reduced symbol set.
- * |default 8
+ * The special value of zero uses the full symbol set (PPM == SF).
+ * |default 0
+ * |option [Full set] 0
+ * |widget ComboBox(editable=true)
+ * |preview valid
  *
  * |param cr[Coding Rate] The number of error correction bits.
  * |option [4/4] "4/4"
@@ -58,7 +62,7 @@ class LoRaEncoder : public Pothos::Block
 public:
     LoRaEncoder(void):
         _sf(10),
-        _ppm(8),
+        _ppm(0),
         _rdd(4),
         _whitening(true)
     {
@@ -106,15 +110,16 @@ public:
         auto outPort = this->output(0);
         if (not inPort->hasMessage()) return;
 
-        if (_ppm > _sf) throw Pothos::Exception("LoRaEncoder::work()", "failed check: PPM <= SF");
+        const size_t PPM = (_ppm == 0)?_sf:_ppm;
+        if (PPM > _sf) throw Pothos::Exception("LoRaEncoder::work()", "failed check: PPM <= SF");
 
         //extract the input bytes
         auto msg = inPort->popMessage();
         auto pkt = msg.extract<Pothos::Packet>();
         std::vector<uint8_t> bytes(pkt.payload.length+2);
         std::memcpy(bytes.data()+1, pkt.payload.as<const void *>(), pkt.payload.length);
-        const size_t numCodewords = roundUp(bytes.size()*2, _ppm);
-        const size_t numSymbols = (numCodewords/_ppm)*(4 + _rdd);
+        const size_t numCodewords = roundUp(bytes.size()*2, PPM);
+        const size_t numSymbols = (numCodewords/PPM)*(4 + _rdd);
 
         //add header and CRC
         bytes[0] = bytes.size();
@@ -144,13 +149,13 @@ public:
 
         //interleave the codewords into symbols
         std::vector<uint16_t> symbols(numSymbols);
-        diagonalInterleave(codewords.data(), numCodewords, symbols.data(), _ppm, _rdd);
+        diagonalInterleave(codewords.data(), numCodewords, symbols.data(), PPM, _rdd);
 
-        //gray decode, when SF > _ppm, pad out LSBs
+        //gray decode, when SF > PPM, pad out LSBs
         for (auto &sym : symbols)
         {
             sym = grayToBinary16(sym);
-            sym <<= (_sf-_ppm);
+            sym <<= (_sf-PPM);
         }
 
         //post the output symbols

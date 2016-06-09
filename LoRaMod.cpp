@@ -27,7 +27,7 @@
  *
  * |param sf[Spread factor] The spreading factor controls the symbol spread.
  * Each symbol will occupy 2^SF number of samples given the waveform BW.
- * |default 8
+ * |default 10
  *
  * |param sync[Sync word] The sync word is a 2-nibble, 2-symbol sync value.
  * The sync word is encoded after the up-chirps and before the down-chirps.
