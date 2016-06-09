@@ -30,6 +30,10 @@
  * |param sf[Spread factor] The spreading factor sets the bits per symbol.
  * |default 10
  *
+ * |param ppm[Symbol size] The size of the symbol set (_ppm <= SF).
+ * Specify _ppm less than the spread factor to use a reduced symbol set.
+ * |default 8
+ *
  * |param cr[Coding Rate] The number of error correction bits.
  * |option [4/4] "4/4"
  * |option [4/5] "4/5"
@@ -44,19 +48,22 @@
  * |default true
  *
  * |factory /lora/lora_encoder()
- * |param setSpreadFactor(sf)
- * |param setCodingRate(cr)
- * |param enableWhitening(whitening)
+ * |setter setSpreadFactor(sf)
+ * |setter setSymbolSize(ppm)
+ * |setter setCodingRate(cr)
+ * |setter enableWhitening(whitening)
  **********************************************************************/
 class LoRaEncoder : public Pothos::Block
 {
 public:
     LoRaEncoder(void):
         _sf(10),
+        _ppm(8),
         _rdd(4),
         _whitening(true)
     {
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaEncoder, setSpreadFactor));
+        this->registerCall(this, POTHOS_FCN_TUPLE(LoRaEncoder, setSymbolSize));
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaEncoder, setCodingRate));
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaEncoder, enableWhitening));
         this->setupInput("0");
@@ -71,6 +78,11 @@ public:
     void setSpreadFactor(const size_t sf)
     {
         _sf = sf;
+    }
+
+    void setSymbolSize(const size_t ppm)
+    {
+        _ppm = ppm;
     }
 
     void setCodingRate(const std::string &cr)
@@ -94,16 +106,15 @@ public:
         auto outPort = this->output(0);
         if (not inPort->hasMessage()) return;
 
-        //4 + RDD symbols out for every PPM codewords
-        const size_t PPM = _sf; //could be less for reduced set
+        if (_ppm > _sf) throw Pothos::Exception("LoRaEncoder::work()", "failed check: PPM <= SF");
 
         //extract the input bytes
         auto msg = inPort->popMessage();
         auto pkt = msg.extract<Pothos::Packet>();
         std::vector<uint8_t> bytes(pkt.payload.length+2);
         std::memcpy(bytes.data()+1, pkt.payload.as<const void *>(), pkt.payload.length);
-        const size_t numCodewords = roundUp(bytes.size()*2, PPM);
-        const size_t numSymbols = (numCodewords/PPM)*(4 + _rdd);
+        const size_t numCodewords = roundUp(bytes.size()*2, _ppm);
+        const size_t numSymbols = (numCodewords/_ppm)*(4 + _rdd);
 
         //add header and CRC
         bytes[0] = bytes.size();
@@ -133,13 +144,13 @@ public:
 
         //interleave the codewords into symbols
         std::vector<uint16_t> symbols(numSymbols);
-        diagonalInterleave(codewords.data(), numCodewords, symbols.data(), PPM, _rdd);
+        diagonalInterleave(codewords.data(), numCodewords, symbols.data(), _ppm, _rdd);
 
-        //gray decode, when SF > PPM, pad out LSBs
+        //gray decode, when SF > _ppm, pad out LSBs
         for (auto &sym : symbols)
         {
             sym = grayToBinary16(sym);
-            sym <<= (_sf-PPM);
+            sym <<= (_sf-_ppm);
         }
 
         //post the output symbols
@@ -151,6 +162,7 @@ public:
 
 private:
     size_t _sf;
+    size_t _ppm;
     size_t _rdd;
     bool _whitening;
 };

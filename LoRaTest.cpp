@@ -101,35 +101,46 @@ POTHOS_TEST_BLOCK("/lora/tests", test_encoder_to_decoder)
     auto decoder = registry.callProxy("/lora/lora_decoder");
     auto collector = registry.callProxy("/blocks/collector_sink", "uint8");
 
-    encoder.callVoid("setSpreadFactor", 10);
-    decoder.callVoid("setSpreadFactor", 10);
-    encoder.callVoid("setCodingRate", "4/8");
-    decoder.callVoid("setCodingRate", "4/8");
+    std::vector<std::string> testCodingRates;
+    testCodingRates.push_back("4/4");
+    testCodingRates.push_back("4/7");
+    testCodingRates.push_back("4/8");
 
-    //create a test plan
-    Poco::JSON::Object::Ptr testPlan(new Poco::JSON::Object());
-    testPlan->set("enablePackets", true);
-    testPlan->set("minValue", 0);
-    testPlan->set("maxValue", 255);
-    testPlan->set("minBufferSize", 2);
-    testPlan->set("maxBufferSize", 2);
-    testPlan->set("minBuffers", 1);
-    testPlan->set("maxBuffers", 1);
-    auto expected = feeder.callProxy("feedTestPlan", testPlan);
-
-    //create tester topology
+    for (size_t SF = 7; SF <= 12; SF++)
     {
-        Pothos::Topology topology;
-        topology.connect(feeder, 0, encoder, 0);
-        topology.connect(encoder, 0, decoder, 0);
-        topology.connect(decoder, 0, collector, 0);
-        topology.commit();
-        POTHOS_TEST_TRUE(topology.waitInactive());
-        //std::cout << topology.queryJSONStats() << std::endl;
-    }
+        std::cout << "Testing SF " << SF << std::endl;
+        for (const auto &CR : testCodingRates)
+        {
+            std::cout << "  with CR " << CR << std::endl;
+            encoder.callVoid("setSpreadFactor", SF);
+            decoder.callVoid("setSpreadFactor", SF);
+            encoder.callVoid("setSymbolSize", SF);
+            decoder.callVoid("setSymbolSize", SF);
+            encoder.callVoid("setCodingRate", CR);
+            decoder.callVoid("setCodingRate", CR);
 
-    std::cout << "verifyTestPlan" << std::endl;
-    collector.callVoid("verifyTestPlan", expected);
+            //create a test plan
+            Poco::JSON::Object::Ptr testPlan(new Poco::JSON::Object());
+            testPlan->set("enablePackets", true);
+            testPlan->set("minValue", 0);
+            testPlan->set("maxValue", 255);
+            auto expected = feeder.callProxy("feedTestPlan", testPlan);
+
+            //create tester topology
+            {
+                Pothos::Topology topology;
+                topology.connect(feeder, 0, encoder, 0);
+                topology.connect(encoder, 0, decoder, 0);
+                topology.connect(decoder, 0, collector, 0);
+                topology.commit();
+                POTHOS_TEST_TRUE(topology.waitInactive());
+                //std::cout << topology.queryJSONStats() << std::endl;
+            }
+
+            std::cout << "verifyTestPlan" << std::endl;
+            collector.callVoid("verifyTestPlan", expected);
+        }
+    }
 }
 
 POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
@@ -137,52 +148,64 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
     auto env = Pothos::ProxyEnvironment::make("managed");
     auto registry = env->findProxy("Pothos/BlockRegistry");
 
+    const size_t SF = 10;
     auto feeder = registry.callProxy("/blocks/feeder_source", "uint8");
     auto encoder = registry.callProxy("/lora/lora_encoder");
-    auto mod = registry.callProxy("/lora/lora_mod", 10);
+    auto mod = registry.callProxy("/lora/lora_mod", SF);
     auto adder = registry.callProxy("/comms/arithmetic", "complex_float32", "ADD");
     auto noise = registry.callProxy("/comms/noise_source", "complex_float32");
-    auto demod = registry.callProxy("/lora/lora_demod", 10);
+    auto demod = registry.callProxy("/lora/lora_demod", SF);
     auto decoder = registry.callProxy("/lora/lora_decoder");
     auto collector = registry.callProxy("/blocks/collector_sink", "uint8");
 
-    encoder.callVoid("setSpreadFactor", 10);
-    decoder.callVoid("setSpreadFactor", 10);
-    encoder.callVoid("setCodingRate", "4/8");
-    decoder.callVoid("setCodingRate", "4/8");
-    mod.callVoid("setAmplitude", 1.0);
-    noise.callVoid("setAmplitude", 4.0);
-    noise.callVoid("setWaveform", "NORMAL");
-    mod.callVoid("setPadding", 512);
-    demod.callVoid("setMTU", 512);
+    std::vector<std::string> testCodingRates;
+    testCodingRates.push_back("4/7");
+    testCodingRates.push_back("4/8");
 
-    //create a test plan
-    Poco::JSON::Object::Ptr testPlan(new Poco::JSON::Object());
-    testPlan->set("enablePackets", true);
-    testPlan->set("minValue", 0);
-    testPlan->set("maxValue", 255);
-    testPlan->set("minBuffers", 5);
-    testPlan->set("maxBuffers", 5);
-    testPlan->set("minBufferSize", 8);
-    testPlan->set("maxBufferSize", 128);
-    auto expected = feeder.callProxy("feedTestPlan", testPlan);
-
-    //create tester topology
+    for (const auto &CR : testCodingRates)
     {
-        Pothos::Topology topology;
-        topology.connect(feeder, 0, encoder, 0);
-        topology.connect(encoder, 0, mod, 0);
-        topology.connect(mod, 0, adder, 0);
-        topology.connect(noise, 0, adder, 1);
-        topology.connect(adder, 0, demod, 0);
-        topology.connect(demod, 0, decoder, 0);
-        topology.connect(decoder, 0, collector, 0);
-        topology.commit();
-        POTHOS_TEST_TRUE(topology.waitInactive());
-        //std::cout << topology.queryJSONStats() << std::endl;
-    }
+        std::cout << "Testing with CR " << CR << std::endl;
 
-    std::cout << "decoder dropped " << decoder.call<unsigned long long>("getDropped") << std::endl;
-    std::cout << "verifyTestPlan" << std::endl;
-    collector.callVoid("verifyTestPlan", expected);
+        encoder.callVoid("setSpreadFactor", SF);
+        decoder.callVoid("setSpreadFactor", SF);
+        encoder.callVoid("setSymbolSize", SF);
+        decoder.callVoid("setSymbolSize", SF);
+        encoder.callVoid("setCodingRate", CR);
+        decoder.callVoid("setCodingRate", CR);
+        mod.callVoid("setAmplitude", 1.0);
+        noise.callVoid("setAmplitude", 4.0);
+        noise.callVoid("setWaveform", "NORMAL");
+        mod.callVoid("setPadding", 512);
+        demod.callVoid("setMTU", 512);
+
+        //create a test plan
+        Poco::JSON::Object::Ptr testPlan(new Poco::JSON::Object());
+        testPlan->set("enablePackets", true);
+        testPlan->set("minValue", 0);
+        testPlan->set("maxValue", 255);
+        testPlan->set("minBuffers", 5);
+        testPlan->set("maxBuffers", 5);
+        testPlan->set("minBufferSize", 8);
+        testPlan->set("maxBufferSize", 128);
+        auto expected = feeder.callProxy("feedTestPlan", testPlan);
+
+        //create tester topology
+        {
+            Pothos::Topology topology;
+            topology.connect(feeder, 0, encoder, 0);
+            topology.connect(encoder, 0, mod, 0);
+            topology.connect(mod, 0, adder, 0);
+            topology.connect(noise, 0, adder, 1);
+            topology.connect(adder, 0, demod, 0);
+            topology.connect(demod, 0, decoder, 0);
+            topology.connect(decoder, 0, collector, 0);
+            topology.commit();
+            POTHOS_TEST_TRUE(topology.waitInactive());
+            //std::cout << topology.queryJSONStats() << std::endl;
+        }
+
+        std::cout << "decoder dropped " << decoder.call<unsigned long long>("dropped") << std::endl;
+        std::cout << "verifyTestPlan" << std::endl;
+        collector.callVoid("verifyTestPlan", expected);
+    }
 }

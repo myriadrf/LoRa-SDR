@@ -198,7 +198,7 @@ public:
             else if (not squelched)
             {
                 total = N - value;
-                _id = "FS";
+                _id = "";
             }
 
             //just noise
@@ -254,7 +254,6 @@ public:
         ////////////////////////////////////////////////////////////////
         {
             total = N;
-            //if (_symCount == 0) std::cout << "recv sym0 " << value << std::endl;
             _outSymbols.as<int16_t *>()[_symCount++] = int16_t(value);
             if (_symCount >= _mtu or squelched)
             {
@@ -264,7 +263,7 @@ public:
                 this->output(0)->postMessage(pkt);
                 _state = STATE_FRAMESYNC;
             }
-            _id = "S";
+            _id = "S" + std::to_string(_symCount);
         } break;
 
         }

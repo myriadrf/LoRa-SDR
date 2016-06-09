@@ -30,6 +30,10 @@
  * |param sf[Spread factor] The spreading factor sets the bits per symbol.
  * |default 10
  *
+ * |param ppm[Symbol size] The size of the symbol set (_ppm <= SF).
+ * Specify _ppm less than the spread factor to use a reduced symbol set.
+ * |default 8
+ *
  * |param cr[Coding Rate] The number of error correction bits.
  * |option [4/4] "4/4"
  * |option [4/5] "4/5"
@@ -44,23 +48,27 @@
  * |default true
  *
  * |factory /lora/lora_decoder()
- * |param setSpreadFactor(sf)
- * |param setCodingRate(cr)
- * |param enableWhitening(whitening)
+ * |setter setSpreadFactor(sf)
+ * |setter setSymbolSize(ppm)
+ * |setter setCodingRate(cr)
+ * |setter enableWhitening(whitening)
  **********************************************************************/
 class LoRaDecoder : public Pothos::Block
 {
 public:
     LoRaDecoder(void):
         _sf(10),
+        _ppm(8),
         _rdd(4),
         _whitening(true),
         _dropped(0)
     {
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, setSpreadFactor));
+        this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, setSymbolSize));
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, setCodingRate));
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, enableWhitening));
-        this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, getDropped));
+        this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, dropped));
+        this->registerProbe("dropped");
         this->setupInput("0");
         this->setupOutput("0");
     }
@@ -73,6 +81,11 @@ public:
     void setSpreadFactor(const size_t sf)
     {
         _sf = sf;
+    }
+
+    void setSymbolSize(const size_t ppm)
+    {
+        _ppm = ppm;
     }
 
     void setCodingRate(const std::string &cr)
@@ -90,9 +103,14 @@ public:
         _whitening = whitening;
     }
 
-    unsigned long long getDropped(void) const
+    unsigned long long dropped(void) const
     {
         return _dropped;
+    }
+
+    void activate(void)
+    {
+        _dropped = 0;
     }
 
     void work(void)
@@ -101,28 +119,27 @@ public:
         auto outPort = this->output(0);
         if (not inPort->hasMessage()) return;
 
-        //4 + RDD symbols out for every PPM codewords
-        const size_t PPM = _sf; //could be less for reduced set
+        if (_ppm > _sf) throw Pothos::Exception("LoRaDecoder::work()", "failed check: PPM <= SF");
 
         //extract the input symbols
         auto msg = inPort->popMessage();
         auto pkt = msg.extract<Pothos::Packet>();
         const size_t numSymbols = roundUp(pkt.payload.elements(), 4 + _rdd);
-        const size_t numCodewords = (numSymbols/(4 + _rdd))*PPM;
+        const size_t numCodewords = (numSymbols/(4 + _rdd))*_ppm;
         std::vector<uint16_t> symbols(numSymbols);
         std::memcpy(symbols.data(), pkt.payload.as<const void *>(), pkt.payload.length);
 
-        //gray encode, when SF > PPM, depad the LSBs with rounding
+        //gray encode, when SF > _ppm, depad the LSBs with rounding
         for (auto &sym : symbols)
         {
-            sym += (1 << (_sf-PPM))/2; //increment by 1/2
-            sym >>= (_sf-PPM); //down shift to PPM bits
+            sym += (1 << (_sf-_ppm))/2; //increment by 1/2
+            sym >>= (_sf-_ppm); //down shift to _ppm bits
             sym = binaryToGray16(sym);
         }
 
         //deinterleave the symbols into codewords
         std::vector<uint8_t> codewords(numCodewords);
-        diagonalDeterleave(symbols.data(), numSymbols, codewords.data(), PPM, _rdd);
+        diagonalDeterleave(symbols.data(), numSymbols, codewords.data(), _ppm, _rdd);
 
         //decode each codeword as 2 bytes with correction
         bool error = false;
@@ -170,6 +187,7 @@ private:
     }
 
     size_t _sf;
+    size_t _ppm;
     size_t _rdd;
     bool _whitening;
     unsigned long long _dropped;
