@@ -48,7 +48,7 @@
  * |param thresh[Threshold] The minimum required level in dB for the detector.
  * The threshold level is used to enter and exit the demodulation state machine.
  * |units dB
- * |default 3.0
+ * |default 10.0
  *
  * |param mtu[Symbol MTU] Produce MTU at most symbols after sync is found.
  * The demodulator does not inspect the payload and will produce at most
@@ -185,7 +185,7 @@ public:
                 }
                 auto value1 = _detector.detect(power);
                 //format as observed from inspecting RN2483
-                match1 = (value1+4)/8 == (_sync & 0xf);
+                match1 = (value1+4)/8 == unsigned(_sync & 0xf);
             }
 
             if (syncd and match0 and match1)
@@ -261,6 +261,8 @@ public:
             _outSymbols.as<int16_t *>()[_symCount++] = int16_t(value);
             if (_symCount >= _mtu or squelched)
             {
+                //for (size_t j = 0; j < _symCount; j++)
+                //    std::cout << "demod[" << j << "]=" << _outSymbols.as<const uint16_t *>()[j] << std::endl;
                 Pothos::Packet pkt;
                 pkt.payload = _outSymbols;
                 pkt.payload.length = _symCount*sizeof(int16_t);

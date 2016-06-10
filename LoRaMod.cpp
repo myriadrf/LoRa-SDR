@@ -221,6 +221,8 @@ public:
             }
             if (_counter >= _payload.elements())
             {
+                //for (size_t j = 0; j < _counter; j++)
+                //    std::cout << "mod[" << j << "]=" << _payload.as<const uint16_t *>()[j] << std::endl;
                 _state = STATE_PADSYMBOLS;
                 _counter = 0;
             }
