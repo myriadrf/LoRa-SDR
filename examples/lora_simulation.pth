@@ -44,7 +44,7 @@
                     "selected" : false,
                     "what" : "Widget",
                     "width" : 365,
-                    "zValue" : 612
+                    "zValue" : 636
                 },
                 {
                     "blockId" : "ChatBox1",
@@ -70,7 +70,7 @@
                     "selected" : false,
                     "what" : "Widget",
                     "width" : 367,
-                    "zValue" : 620
+                    "zValue" : 634
                 },
                 {
                     "blockId" : "TextDisplay0",
@@ -95,7 +95,7 @@
                     "rotation" : 0,
                     "selected" : false,
                     "what" : "Widget",
-                    "width" : 117,
+                    "width" : 137,
                     "zValue" : 632
                 },
                 {
@@ -297,7 +297,7 @@
                         }
                     ],
                     "rotation" : 0,
-                    "selected" : true,
+                    "selected" : false,
                     "what" : "Block",
                     "zValue" : 453
                 },
@@ -399,7 +399,6 @@
                     "zValue" : 451
                 },
                 {
-                    "activeEditTab" : "Axis",
                     "affinityZone" : "",
                     "enabled" : true,
                     "id" : "WaveMonitor0",
@@ -561,7 +560,7 @@
                     "properties" : [
                         {
                             "key" : "title",
-                            "value" : "\"Raw chirp\""
+                            "value" : "\"Raw chirp I & Q\""
                         },
                         {
                             "key" : "numInputs",
@@ -2687,7 +2686,7 @@
                     "rotation" : 0,
                     "selected" : false,
                     "what" : "Block",
-                    "zValue" : 414
+                    "zValue" : 453
                 },
                 {
                     "affinityZone" : "",
@@ -3105,49 +3104,6 @@
                 {
                     "affinityZone" : "",
                     "enabled" : true,
-                    "id" : "Delay0",
-                    "inputDesc" : [
-                        {
-                            "alias" : "0",
-                            "dtype" : "unspecified",
-                            "isSigSlot" : false,
-                            "name" : "0",
-                            "size" : 1
-                        },
-                        {
-                            "alias" : "setDelay",
-                            "dtype" : "unspecified",
-                            "isSigSlot" : true,
-                            "name" : "setDelay",
-                            "size" : 1
-                        }
-                    ],
-                    "outputDesc" : [
-                        {
-                            "alias" : "0",
-                            "dtype" : "unspecified",
-                            "isSigSlot" : false,
-                            "name" : "0",
-                            "size" : 1
-                        }
-                    ],
-                    "path" : "\/blocks\/delay",
-                    "positionX" : 627,
-                    "positionY" : 174,
-                    "properties" : [
-                        {
-                            "key" : "delay",
-                            "value" : "42"
-                        }
-                    ],
-                    "rotation" : 0,
-                    "selected" : false,
-                    "what" : "Block",
-                    "zValue" : 450
-                },
-                {
-                    "affinityZone" : "",
-                    "enabled" : true,
                     "id" : "Rotate0",
                     "inputDesc" : [
                         {
@@ -3289,20 +3245,6 @@
                 },
                 {
                     "enabled" : true,
-                    "id" : "Connection_Arithmetic00_Delay00",
-                    "inputId" : "Delay0",
-                    "inputKey" : "0",
-                    "outputId" : "Arithmetic0",
-                    "outputKey" : "0",
-                    "positionX" : 0,
-                    "positionY" : 0,
-                    "rotation" : 0,
-                    "selected" : false,
-                    "what" : "Connection",
-                    "zValue" : 0
-                },
-                {
-                    "enabled" : true,
                     "id" : "Connection_NoiseSource10_Arithmetic00",
                     "inputId" : "Arithmetic0",
                     "inputKey" : "0",
@@ -3321,20 +3263,6 @@
                     "inputId" : "Arithmetic0",
                     "inputKey" : "1",
                     "outputId" : "txSamps1",
-                    "outputKey" : "0",
-                    "positionX" : 0,
-                    "positionY" : 0,
-                    "rotation" : 0,
-                    "selected" : false,
-                    "what" : "Connection",
-                    "zValue" : 0
-                },
-                {
-                    "enabled" : true,
-                    "id" : "Connection_Delay00_Rotate00",
-                    "inputId" : "Rotate0",
-                    "inputKey" : "0",
-                    "outputId" : "Delay0",
                     "outputKey" : "0",
                     "positionX" : 0,
                     "positionY" : 0,
@@ -3377,6 +3305,20 @@
                     "inputId" : "Spectrogram0",
                     "inputKey" : "0",
                     "outputId" : "Rotate0",
+                    "outputKey" : "0",
+                    "positionX" : 0,
+                    "positionY" : 0,
+                    "rotation" : 0,
+                    "selected" : false,
+                    "what" : "Connection",
+                    "zValue" : 0
+                },
+                {
+                    "enabled" : true,
+                    "id" : "Connection_Arithmetic00_Rotate00",
+                    "inputId" : "Rotate0",
+                    "inputKey" : "0",
+                    "outputId" : "Arithmetic0",
                     "outputKey" : "0",
                     "positionX" : 0,
                     "positionY" : 0,
