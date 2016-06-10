@@ -23,15 +23,15 @@
                 {
                     "blockId" : "Periodogram0",
                     "enabled" : true,
-                    "height" : 245,
+                    "height" : 228,
                     "id" : "WidgetPeriodogram0",
                     "positionX" : 384,
                     "positionY" : 5,
                     "rotation" : 0,
-                    "selected" : true,
+                    "selected" : false,
                     "what" : "Widget",
                     "width" : 438,
-                    "zValue" : 628
+                    "zValue" : 631
                 },
                 {
                     "blockId" : "WaveMonitor0",
@@ -82,8 +82,8 @@
                     "rotation" : 0,
                     "selected" : false,
                     "what" : "Widget",
-                    "width" : 106,
-                    "zValue" : 607
+                    "width" : 114,
+                    "zValue" : 633
                 },
                 {
                     "blockId" : "TextDisplay1",
@@ -95,8 +95,8 @@
                     "rotation" : 0,
                     "selected" : false,
                     "what" : "Widget",
-                    "width" : 137,
-                    "zValue" : 603
+                    "width" : 117,
+                    "zValue" : 632
                 },
                 {
                     "blockId" : "WaveMonitor1",
@@ -109,7 +109,7 @@
                     "selected" : false,
                     "what" : "Widget",
                     "width" : 809,
-                    "zValue" : 626
+                    "zValue" : 629
                 },
                 {
                     "blockId" : "TextDisplay2",
