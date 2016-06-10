@@ -1201,8 +1201,8 @@
                         }
                     ],
                     "path" : "\/widgets\/chat_box",
-                    "positionX" : 896,
-                    "positionY" : 287,
+                    "positionX" : 899,
+                    "positionY" : 217,
                     "properties" : [
                         {
                             "key" : "username",
@@ -1216,7 +1216,7 @@
                     "rotation" : 0,
                     "selected" : false,
                     "what" : "Block",
-                    "zValue" : 461
+                    "zValue" : 588
                 },
                 {
                     "activeEditTab" : "Channels",
@@ -2796,8 +2796,8 @@
 
                     ],
                     "path" : "\/widgets\/text_display",
-                    "positionX" : 893,
-                    "positionY" : 223,
+                    "positionX" : 900,
+                    "positionY" : 301,
                     "properties" : [
                         {
                             "key" : "title",
@@ -2815,7 +2815,7 @@
                     "rotation" : 0,
                     "selected" : false,
                     "what" : "Block",
-                    "zValue" : 477
+                    "zValue" : 587
                 },
                 {
                     "affinityZone" : "",

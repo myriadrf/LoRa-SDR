@@ -1121,8 +1121,8 @@
                         }
                     ],
                     "path" : "\/widgets\/chat_box",
-                    "positionX" : 896,
-                    "positionY" : 287,
+                    "positionX" : 898,
+                    "positionY" : 222,
                     "properties" : [
                         {
                             "key" : "username",
@@ -1136,7 +1136,7 @@
                     "rotation" : 0,
                     "selected" : false,
                     "what" : "Block",
-                    "zValue" : 442
+                    "zValue" : 535
                 },
                 {
                     "activeEditTab" : "Channels",
@@ -2796,8 +2796,8 @@
 
                     ],
                     "path" : "\/widgets\/text_display",
-                    "positionX" : 898,
-                    "positionY" : 214,
+                    "positionX" : 910,
+                    "positionY" : 292,
                     "properties" : [
                         {
                             "key" : "title",
@@ -2815,7 +2815,7 @@
                     "rotation" : 0,
                     "selected" : false,
                     "what" : "Block",
-                    "zValue" : 477
+                    "zValue" : 534
                 },
                 {
                     "affinityZone" : "",
@@ -2834,15 +2834,15 @@
                         }
                     ],
                     "path" : "\/lora\/test_gen",
-                    "positionX" : 75,
-                    "positionY" : 222,
+                    "positionX" : 85,
+                    "positionY" : 249,
                     "properties" : [
 
                     ],
                     "rotation" : 0,
-                    "selected" : true,
+                    "selected" : false,
                     "what" : "Block",
-                    "zValue" : 529
+                    "zValue" : 538
                 },
                 {
                     "affinityZone" : "",
@@ -2888,8 +2888,8 @@
                         }
                     ],
                     "path" : "\/blocks\/pacer",
-                    "positionX" : 169,
-                    "positionY" : 161,
+                    "positionX" : 147,
+                    "positionY" : 167,
                     "properties" : [
                         {
                             "key" : "rate",
@@ -2897,9 +2897,9 @@
                         }
                     ],
                     "rotation" : 0,
-                    "selected" : true,
+                    "selected" : false,
                     "what" : "Block",
-                    "zValue" : 527
+                    "zValue" : 537
                 },
                 {
                     "enabled" : true,
@@ -3111,7 +3111,7 @@
                     "positionX" : 0,
                     "positionY" : 0,
                     "rotation" : 0,
-                    "selected" : true,
+                    "selected" : false,
                     "what" : "Connection",
                     "zValue" : 0
                 },
