@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Class for controling a RN2483 with python's Serial module
 """
@@ -79,7 +80,8 @@ if __name__ == '__main__':
     parser.add_option("--cr", type="string", dest="cr", help="Coding rate", default='4/8')
     parser.add_option("--sync", type="string", dest="sync", help="Sync word", default='0x12')
     parser.add_option("--cw", action="store_true", dest="cw", help="Transmit continuous wave")
-    parser.add_option("--tx", type="string", dest="tx", help="Transmit the specified message in a loop", default=None)
+    parser.add_option("--tx", type="string", dest="tx", help="Transmit the specified message", default=None)
+    parser.add_option("--repeat", action="store_true", dest="repeat", help="Repeat transmission")
     (options, args) = parser.parse_args()
 
     rn2483 = RN2483(options.port)
@@ -97,5 +99,5 @@ if __name__ == '__main__':
         exit(0)
 
     if options.tx:
-        while True:
-            rn2483.transmit(options.tx)
+        rn2483.transmit(options.tx) #transmit once
+        while options.repeat: rn2483.transmit(options.tx)
