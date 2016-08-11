@@ -28,6 +28,7 @@ POTHOS_MODULE_UTIL(
         LoRaDecoder.cpp
         LoRaTest.cpp
         TestGen.cpp
+		BlockGen.cpp
     DESTINATION lora
     ENABLE_DOCS
 )

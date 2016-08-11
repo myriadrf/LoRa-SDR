@@ -114,7 +114,13 @@ public:
         case STATE_WAITINPUT:
         ////////////////////////////////////////////////////////////////
         {
-            if (not this->input(0)->hasMessage()) return;
+			if (not this->input(0)->hasMessage()) {
+				for (i = 0; i < N; i++){
+					samps[i] = 0;
+				}
+				outPort->produce(i);
+				return;
+			}
             auto msg = this->input(0)->popMessage();
             auto pkt = msg.extract<Pothos::Packet>();
             _payload = pkt.payload;

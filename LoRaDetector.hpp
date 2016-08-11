@@ -24,12 +24,13 @@ public:
     }
 
     //! calculates argmax(abs(fft(input)))
-    size_t detect(Type &power)
+    size_t detect(Type &power, Type &fIndex)
     {
         _fft.transform(_fftInput.data(), _fftOutput.data());
         size_t maxIndex = 0;
         Type maxValue = 0;
-        for (size_t i = 0; i < _fftOutput.size(); i++)
+        size_t N = _fftOutput.size();
+        for (size_t i = 0; i < N; i++)
         {
             auto bin = _fftOutput[i];
             auto re = bin.real();
@@ -42,7 +43,17 @@ public:
             }
         }
         power = maxValue;
+        
+        auto left = _fftOutput[maxIndex > 0?maxIndex-1:N-1];
+        auto right = _fftOutput[maxIndex < N-1?maxIndex+1:0];
+        
+        fIndex = 0.5 * (abs(right) - abs(left)) / (2.0 * sqrt(maxValue) - abs(right) - abs(left));
+        
         return maxIndex;
+    }
+    
+    std::vector<std::complex<Type>>* getOutput(){
+        return &_fftOutput;
     }
 
 private:
