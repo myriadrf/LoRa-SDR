@@ -213,10 +213,12 @@ public:
 				codewords[cOfs++] = encodeParity54(bytes[dOfs >> 1] >> 4);
 			else
 				codewords[cOfs++] = encodeParity54(bytes[dOfs >> 1] & 0xf);
-		} else if (RDD == 2) for (size_t i = 0; i < count; i++, dOfs++) {			if (dOfs & 1)
+		} else if (RDD == 2) for (size_t i = 0; i < count; i++, dOfs++) {
+			if (dOfs & 1)
 				codewords[cOfs++] = encodeParity64(bytes[dOfs >> 1] >> 4);
 			else
-				codewords[cOfs++] = encodeParity64(bytes[dOfs >> 1] & 0xf);		} else if (RDD == 3) for (size_t i = 0; i < count; i++, dOfs++) {
+				codewords[cOfs++] = encodeParity64(bytes[dOfs >> 1] & 0xf);
+		} else if (RDD == 3) for (size_t i = 0; i < count; i++, dOfs++) {
 			if (dOfs & 1)
 				codewords[cOfs++] = encodeHamming74sx(bytes[dOfs >> 1] >> 4);
 			else
