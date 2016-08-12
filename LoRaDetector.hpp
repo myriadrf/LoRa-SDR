@@ -14,6 +14,7 @@ public:
         _fftOutput(N),
         _fft(N, false)
     {
+        _powerScale = 1.0 / (N * N);
         return;
     }
 
@@ -24,25 +25,29 @@ public:
     }
 
     //! calculates argmax(abs(fft(input)))
-    size_t detect(Type &power, Type &fIndex)
+    size_t detect(Type &power, Type &powerAvg,  Type &fIndex)
     {
         _fft.transform(_fftInput.data(), _fftOutput.data());
         size_t maxIndex = 0;
         Type maxValue = 0;
         size_t N = _fftOutput.size();
+        Type avg = 0;
         for (size_t i = 0; i < N; i++)
         {
             auto bin = _fftOutput[i];
             auto re = bin.real();
             auto im = bin.imag();
             auto mag2 = re*re + im*im;
+            avg += mag2;
             if (mag2 > maxValue)
             {
                 maxIndex = i;
                 maxValue = mag2;
             }
         }
-        power = maxValue;
+        
+        powerAvg = (avg - maxValue) * _powerScale;
+        power = maxValue * _powerScale;
         
         auto left = _fftOutput[maxIndex > 0?maxIndex-1:N-1];
         auto right = _fftOutput[maxIndex < N-1?maxIndex+1:0];
@@ -57,6 +62,7 @@ public:
     }
 
 private:
+    Type _powerScale;
     std::vector<std::complex<Type>> _fftInput;
     std::vector<std::complex<Type>> _fftOutput;
     kissfft<Type> _fft;

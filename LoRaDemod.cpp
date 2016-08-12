@@ -83,7 +83,7 @@ public:
         
         this->registerSignal("error");
         this->registerSignal("power");
-
+        this->registerSignal("snr");
 
         //use at most two input symbols available
         this->input(0)->setReserve(N*2);
@@ -178,10 +178,15 @@ public:
             _detector.feed(i, decd);
         }
         float power = 0;
+        float powerAvg = 0;
+        float snr = 0;
         float fIndex = 0;
         
-        auto value = _detector.detect(power,fIndex);
-        const bool squelched = (power < _thresh);
+        auto value = _detector.detect(power,powerAvg,fIndex);
+        if (0 != powerAvg){
+            snr = power / powerAvg;
+        }
+        const bool squelched = (snr < _thresh);
         
         memcpy(fftBuff,&_detector.getOutput()->front(),sizeof(float) * 2 * N);
        
@@ -211,7 +216,7 @@ public:
                     decBuff[i+N] = decd;
                     _detector.feed(i, decd);
                 }
-                auto value1 = _detector.detect(power, fIndex);
+                auto value1 = _detector.detect(power,powerAvg,fIndex);
                 //format as observed from inspecting RN2483
                 match1 = (value1+4)/8 == unsigned(_sync & 0xf);
             }
@@ -277,6 +282,7 @@ public:
             
             this->callVoid("error", _freqError);
             this->callVoid("power", 10*log10(power));
+            this->callVoid("snr", 10 * log(snr));
         } break;
 
         ////////////////////////////////////////////////////////////////

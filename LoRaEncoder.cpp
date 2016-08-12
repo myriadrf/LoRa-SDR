@@ -245,8 +245,8 @@ public:
 		std::vector<uint8_t> bytes(payloadLength);
 		std::memcpy(bytes.data(), pkt.payload.as<const void *>(), pkt.payload.length);
 				
-		const size_t numCodewords = roundUp(bytes.size() * 2 + (_explicit ? 5:0), PPM);
-		const size_t numSymbols = 8 + (numCodewords / PPM - 1) * (4 + _rdd);		// header is always coded with 8 bits
+		const size_t numCodewords = roundUp(bytes.size() * 2 + (_explicit ? N_HEADER_CODEWORDS:0), PPM);
+		const size_t numSymbols = N_HEADER_SYMBOLS + (numCodewords / PPM - 1) * (4 + _rdd);		// header is always coded with 8 bits
 		
 		size_t cOfs = 0;
 		size_t dOfs = 0;
@@ -274,7 +274,7 @@ public:
 		size_t cOfs1 = cOfs;
 		encodeFec(codewords, 4, cOfs, dOfs, bytes.data(), PPM - cOfs);
 		if (_whitening) {
-			Sx1272ComputeWhitening(codewords.data() + cOfs1, PPM - cOfs1, 0, 4);
+			Sx1272ComputeWhitening(codewords.data() + cOfs1, PPM - cOfs1, 0, HEADER_RDD);
 		}
 
 		if (numCodewords > PPM) {
@@ -287,9 +287,9 @@ public:
 
 		//interleave the codewords into symbols
 		std::vector<uint16_t> symbols(numSymbols);
-		diagonalInterleaveSx(codewords.data(), PPM, symbols.data(), PPM, 4);
+		diagonalInterleaveSx(codewords.data(), PPM, symbols.data(), PPM, HEADER_RDD);
 		if (numCodewords > PPM) {
-			diagonalInterleaveSx(codewords.data() + PPM, numCodewords-PPM, symbols.data()+8, PPM, _rdd);
+			diagonalInterleaveSx(codewords.data() + PPM, numCodewords-PPM, symbols.data()+N_HEADER_SYMBOLS, PPM, _rdd);
 		}
 
 		//gray decode, when SF > PPM, pad out LSBs

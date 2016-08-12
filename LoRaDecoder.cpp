@@ -202,6 +202,7 @@ public:
 		//extract the input symbols
 		auto msg = inPort->popMessage();
 		auto pkt = msg.extract<Pothos::Packet>();
+        
 		const size_t numSymbols = roundUp(pkt.payload.elements(), 4 + _rdd);
 		const size_t numCodewords = (numSymbols / (4 + _rdd))*PPM;
 		std::vector<uint16_t> symbols(numSymbols);
@@ -277,6 +278,9 @@ public:
 		//extract the input symbols
 		auto msg = inPort->popMessage();
 		auto pkt = msg.extract<Pothos::Packet>();
+        
+        if (pkt.payload.elements() < N_HEADER_SYMBOLS) return; // need at least a header
+        
 		const size_t numSymbols = roundUp(pkt.payload.elements(), 4 + _rdd);
 		const size_t numCodewords = (numSymbols / (4 + _rdd))*PPM;
 		std::vector<uint16_t> symbols(numSymbols);
@@ -293,21 +297,21 @@ public:
 		if (_interleaving) {
 			size_t sOfs = 0;
 			size_t cOfs = 0;
-			if (_rdd < 4) {
-				int n = (numSymbols < 8)?numSymbols:8;
-				diagonalDeterleaveSx(symbols.data(), n, codewords.data(), PPM, 4);
+			if (_rdd != HEADER_RDD) {
+				int n = numSymbols;
+				diagonalDeterleaveSx(symbols.data(), n, codewords.data(), PPM, HEADER_RDD);
 				if (_explicit) {
-					Sx1272ComputeWhitening(codewords.data() + 5, PPM - 5, 0, 4);
+					Sx1272ComputeWhitening(codewords.data() + N_HEADER_CODEWORDS, PPM - N_HEADER_CODEWORDS, 0, HEADER_RDD);
 				}
 				else {
-					Sx1272ComputeWhitening(codewords.data(), PPM, 0, 4);
+					Sx1272ComputeWhitening(codewords.data(), PPM, 0, HEADER_RDD);
 				}
 				cOfs += PPM;
-				sOfs += 8;
+				sOfs += N_HEADER_SYMBOLS;
 				if (numSymbols - sOfs > 0) {
 					diagonalDeterleaveSx(symbols.data() + sOfs, numSymbols-sOfs, codewords.data() + cOfs, PPM, _rdd);
 					if (_explicit) {
-						Sx1272ComputeWhitening(codewords.data() + cOfs, numCodewords - cOfs, PPM-5, _rdd);
+						Sx1272ComputeWhitening(codewords.data() + cOfs, numCodewords - cOfs, PPM-N_HEADER_CODEWORDS, _rdd);
 					}
 					else {
 						Sx1272ComputeWhitening(codewords.data() + cOfs, numCodewords - cOfs, PPM, _rdd);
@@ -316,7 +320,7 @@ public:
 			}else{
 				diagonalDeterleaveSx(symbols.data(), numSymbols, codewords.data(), PPM, _rdd);
 				if (_explicit) {
-					Sx1272ComputeWhitening(codewords.data()+5, numCodewords-5, 0, _rdd);
+					Sx1272ComputeWhitening(codewords.data()+N_HEADER_CODEWORDS, numCodewords-N_HEADER_CODEWORDS, 0, _rdd);
 				}
 				else {
 					Sx1272ComputeWhitening(codewords.data(), numCodewords, 0, _rdd);
@@ -356,7 +360,7 @@ public:
 
 			if (error && _errorCheck) return this->drop();
 
-			cOfs = 5;
+			cOfs = N_HEADER_CODEWORDS;
 			dOfs = 6;
 		}
 		
