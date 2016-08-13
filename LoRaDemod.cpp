@@ -4,6 +4,7 @@
 #include <Pothos/Framework.hpp>
 #include <iostream>
 #include <complex>
+#include <cstring>
 #include <cmath>
 #include "LoRaDetector.hpp"
 
