@@ -51,6 +51,11 @@
  * |option [Off] false
  * |default true
  *
+ * |param hdr[Header Output] Enable/disable header output.
+ * |option [On] true
+ * |option [Off] false
+ * |default false
+ *
  * |param dataLength implicit data length.
  * |default 8
  *
@@ -84,6 +89,7 @@
  * |setter setSymbolSize(ppm)
  * |setter setCodingRate(cr)
  * |setter enableExplicit(explicit)
+ * |setter enableHdr(hdr)
  * |setter setDataLength(dataLength)
  * |setter enableCrcc(crcc)
  * |setter enableWhitening(whitening)
@@ -103,6 +109,7 @@ public:
 		_legacy(false),
 		_errorCheck(false),
 		_explicit(true),
+        _hdr(false),
 		_dataLength(8),
         _dropped(0)
     {
@@ -114,6 +121,7 @@ public:
 		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, enableInterleaving));
 		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, enableLegacy));
 		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, enableExplicit));
+        this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, enableHdr));
 		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, setDataLength));
 		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, enableErrorCheck));
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, getDropped));
@@ -165,6 +173,10 @@ public:
 	void enableExplicit(const bool __explicit) {
 		_explicit = __explicit;
 	}
+    
+    void enableHdr(const bool hdr) {
+        _hdr = hdr;
+    }
 
 	void enableErrorCheck(const bool errorCheck) {
 		_errorCheck = errorCheck;
@@ -346,6 +358,10 @@ public:
 		std::vector<uint8_t> bytes(codewords.size() / 2);
 		size_t dOfs = 0;
 		size_t cOfs = 0;
+        
+        size_t packetLength = 0;
+        size_t dataLength = 0;
+        bool checkCrc = _crcc;
 		
 		if (_explicit) {
 			bytes[0] = decodeHamming84sx(codewords[1], error) & 0xf;
@@ -359,10 +375,26 @@ public:
 			bytes[2] ^= headerChecksum(bytes.data());
 
 			if (error && _errorCheck) return this->drop();
-
+            
+            if (0 == (bytes[1] & 1)) checkCrc = false;	// disable crc check if not present in the packet
+            _rdd = (bytes[1] >> 1) & 0x7;				// header contains error correction info
+            if (_rdd > 4) return this->drop();
+            
+            packetLength = bytes[0];
+            dataLength = packetLength + ((bytes[1] & 1)?5:3);  // include  header and crc
+            
 			cOfs = N_HEADER_CODEWORDS;
 			dOfs = 6;
-		}
+        }else{
+            packetLength = _dataLength;
+            if (_crcc){
+                dataLength = packetLength + 2;
+            }else{
+                dataLength = packetLength;
+            }
+        }
+        
+        if (dataLength > bytes.size()) return this->drop();
 		
 		for (; cOfs < PPM; cOfs++, dOfs++) {
 			if (dOfs & 1)
@@ -393,64 +425,56 @@ public:
 
 		if (error && _errorCheck) return this->drop();
 
-		bool checkCrc = _crcc;
-
-		if (_explicit) {
-			if (0 == (bytes[1] & 1)) checkCrc = false;	// disable crc check if not present in the packet
-			_rdd = (bytes[1] >> 1) & 0x7;				// header contains error correction info
-			if (_rdd > 4) return this->drop();
-		}
 
 		//decode each codeword as 2 bytes with correction
-		if (_rdd == 0) for (size_t i = dOfs; i < bytes.size(); i++) {
+		if (_rdd == 0) for (size_t i = dOfs; i < dataLength; i++) {
 			bytes[i] = codewords[cOfs++] & 0xf;
 			bytes[i] |= codewords[cOfs++] << 4;
-		}else if (_rdd == 1) for (size_t i = dOfs; i < bytes.size(); i++) {
+		}else if (_rdd == 1) for (size_t i = dOfs; i < dataLength; i++) {
 			bytes[i] = checkParity54(codewords[cOfs++],error);
 			bytes[i] |= checkParity54(codewords[cOfs++], error) << 4;
-		}else if (_rdd == 2) for (size_t i = dOfs; i < bytes.size(); i++) {
+		}else if (_rdd == 2) for (size_t i = dOfs; i < dataLength; i++) {
 			bytes[i] = checkParity64(codewords[cOfs++], error);
 			bytes[i] |= checkParity64(codewords[cOfs++],error) << 4;
-		}else if (_rdd == 3) for (size_t i = dOfs; i < bytes.size(); i++){
+		}else if (_rdd == 3) for (size_t i = dOfs; i < dataLength; i++){
 			bytes[i] = decodeHamming74sx(codewords[cOfs++]) & 0xf;
 			bytes[i] |= decodeHamming74sx(codewords[cOfs++]) << 4;
-		}else if (_rdd == 4) for (size_t i = dOfs; i < bytes.size(); i++){
+		}else if (_rdd == 4) for (size_t i = dOfs; i < dataLength; i++){
 			bytes[i] = decodeHamming84sx(codewords[cOfs++], error) & 0xf;
 			bytes[i] |= decodeHamming84sx(codewords[cOfs++], error) << 4;
 		}
 		
 		if (error && _errorCheck) return this->drop();
-		size_t length;
-
+        
+        dOfs = 0;
+        
 		if (_explicit) {
-			size_t packetLength = bytes[0];
-			length = 5 + packetLength;												// include  header and crc
-			if (length <= bytes.size() && (bytes[1] & 1)) {							// always compute crc if present
+			if (bytes[1] & 1) {							// always compute crc if present
 				uint16_t crc = sx1272DataChecksum(bytes.data() + 3, packetLength);
 				uint16_t packetCrc = bytes[3 + packetLength] | (bytes[4 + packetLength] << 8);
 				if (crc != packetCrc && checkCrc) return this->drop();
 				bytes[3 + packetLength] ^= crc;
 				bytes[4 + packetLength] ^= (crc >> 8);
 			}
+            if (!_hdr){
+                dOfs = 3;
+                dataLength -= 5;
+            }
 		}
 		else {
-			length = _dataLength + 2;
-			if (length > bytes.size()) length = bytes.size(); 
-			else{
-				if (checkCrc) {
-					uint16_t crc = sx1272DataChecksum(bytes.data(), _dataLength);
-					uint16_t packetCrc = bytes[_dataLength] | (bytes[_dataLength + 1] << 8);
-					if (crc != packetCrc) return this->drop();
-					bytes[_dataLength + 0] ^= crc;
-					bytes[_dataLength + 1] ^= (crc >> 8);
-				}
-			}
+            if (checkCrc) {
+                uint16_t crc = sx1272DataChecksum(bytes.data(), _dataLength);
+                uint16_t packetCrc = bytes[_dataLength] | (bytes[_dataLength + 1] << 8);
+                if (crc != packetCrc) return this->drop();
+                bytes[_dataLength + 0] ^= crc;
+                bytes[_dataLength + 1] ^= (crc >> 8);
+            }
 		}
 		
 		//post the output bytes
 		Pothos::Packet out;
-		out.payload = Pothos::BufferChunk(typeid(uint8_t), length);
-		std::memcpy(out.payload.as<void *>(), bytes.data(), out.payload.length);
+		out.payload = Pothos::BufferChunk(typeid(uint8_t), dataLength);
+		std::memcpy(out.payload.as<void *>(), bytes.data()+dOfs, out.payload.length);
 		outPort->postMessage(out);
 		return;
 
@@ -480,6 +504,7 @@ private:
 	bool _legacy;
 	bool _errorCheck;
 	bool _explicit;
+    bool _hdr;
 	size_t _dataLength;
     unsigned long long _dropped;
 };
