@@ -148,6 +148,24 @@ static inline void Sx1272ComputeWhitening(uint8_t *buffer, uint16_t bufferSize, 
 	}	
 }
 
+/***********************************************************************
+ *  Whitening generator reverse engineered from Sx1272 data stream.
+ *  Same as above but using the actual interleaved LFSRs.
+ **********************************************************************/
+static inline void Sx1272ComputeWhiteningLfsr(uint8_t *buffer, uint16_t bufferSize, const int bitOfs, const size_t RDD) {
+    static const uint64_t seed1[2] = {0x6572D100E85C2EFF,0xE85C2EFFFFFFFFFF};   // lfsr start values
+    static const uint64_t seed2[2] = {0x05121100F8ECFEEF,0xF8ECFEEFEFEFEFEF};   // lfsr start values for single parity mode (1 == RDD)
+    const uint8_t m = 0xff >> (4 - RDD);
+    uint64_t r[2] = {(1 == RDD)?seed2[0]:seed1[0],(1 == RDD)?seed2[1]:seed1[1]};
+    int i,j;
+    for (i = 0; i < bitOfs;i++){
+        r[i & 1] = (r[i & 1] >> 8) | (((r[i & 1] >> 32) ^ (r[i & 1] >> 24) ^ (r[i & 1] >> 16) ^ r[i & 1]) << 56);
+    }
+    for (j = 0; j < bufferSize; j++,i++) {
+        buffer[j] ^= r[i & 1] & m;
+        r[i & 1] = (r[i & 1] >> 8) | (((r[i & 1] >> 32) ^ (r[i & 1] >> 24) ^ (r[i & 1] >> 16) ^ r[i & 1]) << 56);
+    }	
+}
 
 
 /***********************************************************************

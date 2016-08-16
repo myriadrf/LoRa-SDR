@@ -313,29 +313,29 @@ public:
 				int n = numSymbols;
 				diagonalDeterleaveSx(symbols.data(), n, codewords.data(), PPM, HEADER_RDD);
 				if (_explicit) {
-					Sx1272ComputeWhitening(codewords.data() + N_HEADER_CODEWORDS, PPM - N_HEADER_CODEWORDS, 0, HEADER_RDD);
+					Sx1272ComputeWhiteningLfsr(codewords.data() + N_HEADER_CODEWORDS, PPM - N_HEADER_CODEWORDS, 0, HEADER_RDD);
 				}
 				else {
-					Sx1272ComputeWhitening(codewords.data(), PPM, 0, HEADER_RDD);
+					Sx1272ComputeWhiteningLfsr(codewords.data(), PPM, 0, HEADER_RDD);
 				}
 				cOfs += PPM;
 				sOfs += N_HEADER_SYMBOLS;
 				if (numSymbols - sOfs > 0) {
 					diagonalDeterleaveSx(symbols.data() + sOfs, numSymbols-sOfs, codewords.data() + cOfs, PPM, _rdd);
 					if (_explicit) {
-						Sx1272ComputeWhitening(codewords.data() + cOfs, numCodewords - cOfs, PPM-N_HEADER_CODEWORDS, _rdd);
+						Sx1272ComputeWhiteningLfsr(codewords.data() + cOfs, numCodewords - cOfs, PPM-N_HEADER_CODEWORDS, _rdd);
 					}
 					else {
-						Sx1272ComputeWhitening(codewords.data() + cOfs, numCodewords - cOfs, PPM, _rdd);
+						Sx1272ComputeWhiteningLfsr(codewords.data() + cOfs, numCodewords - cOfs, PPM, _rdd);
 					}
 				}
 			}else{
 				diagonalDeterleaveSx(symbols.data(), numSymbols, codewords.data(), PPM, _rdd);
 				if (_explicit) {
-					Sx1272ComputeWhitening(codewords.data()+N_HEADER_CODEWORDS, numCodewords-N_HEADER_CODEWORDS, 0, _rdd);
+					Sx1272ComputeWhiteningLfsr(codewords.data()+N_HEADER_CODEWORDS, numCodewords-N_HEADER_CODEWORDS, 0, _rdd);
 				}
 				else {
-					Sx1272ComputeWhitening(codewords.data(), numCodewords, 0, _rdd);
+					Sx1272ComputeWhiteningLfsr(codewords.data(), numCodewords, 0, _rdd);
 				}
 			}
 		/*
