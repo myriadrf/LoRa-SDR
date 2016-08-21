@@ -67,21 +67,21 @@ public:
 		if (0 == _ws) {
 			Pothos::BufferChunk msgBuff(typeid(uint8_t), _elements.size());
 			uint8_t *p = msgBuff.as<uint8_t *>();
-			for (int i = 0; i < _elements.size(); i++) {
+			for (size_t i = 0; i < _elements.size(); i++) {
 				p[i] = _elements[i] & 0xff;
 			}
 			outPkt.payload = msgBuff;
 		}else if (1 == _ws){
 			Pothos::BufferChunk msgBuff(typeid(uint16_t), _elements.size());
 			uint16_t *p = msgBuff.as<uint16_t *>();
-			for (int i = 0; i < _elements.size(); i++) {
+			for (size_t i = 0; i < _elements.size(); i++) {
 				p[i] = _elements[i] & 0xffff;
 			}
 			outPkt.payload = msgBuff;
 		}else {
 			Pothos::BufferChunk msgBuff(typeid(uint32_t), _elements.size());
 			uint32_t *p = msgBuff.as<uint32_t *>();
-			for (int i = 0; i < _elements.size(); i++) {
+			for (size_t i = 0; i < _elements.size(); i++) {
 				p[i] = _elements[i];
 			}
 			outPkt.payload = msgBuff;

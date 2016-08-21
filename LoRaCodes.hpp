@@ -126,7 +126,7 @@ static inline void SX1232RadioComputeWhitening( uint8_t *buffer, uint16_t buffer
  *  Whitening generator reverse engineered from Sx1272 data stream.
  *  Each bit of a codeword is combined with the output from a different position in the whitening sequence.
  **********************************************************************/
-static inline void Sx1272ComputeWhitening(uint8_t *buffer, uint16_t bufferSize, const int bitOfs, const size_t RDD) {
+static inline void Sx1272ComputeWhitening(uint8_t *buffer, uint16_t bufferSize, const int bitOfs, const int RDD) {
 	static const int ofs0[8] = {6,4,2,0,-112,-114,-302,-34 };	// offset into sequence for each bit
 	static const int ofs1[5] = {6,4,2,0,-360 };					// different offsets used for single parity mode (1 == RDD)
 	static const int whiten_len = 510;							// length of whitening sequence

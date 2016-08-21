@@ -83,8 +83,9 @@ public:
 		_sf(10),
 		_ppm(0),
 		_rdd(4),
-		_crc(true),
 		_legacy(false),
+		_explicit(true),
+		_crc(true),
 		_whitening(true)
 	{
 		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaEncoder, setSpreadFactor));

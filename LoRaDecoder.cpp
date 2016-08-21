@@ -106,6 +106,7 @@ public:
         _rdd(4),
         _whitening(true),
 		_crcc(false),
+		_interleaving(true),
 		_legacy(false),
 		_errorCheck(false),
 		_explicit(true),

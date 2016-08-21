@@ -56,10 +56,10 @@ class LoRaMod : public Pothos::Block
 public:
 	LoRaMod(const size_t sf) :
 		N(1 << sf),
+		_ovs(1),
 		_sync(0x12),
 		_padding(1),
-		_ampl(0.3f),
-		_ovs(1)
+		_ampl(0.3f)
     {
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaMod, setSync));
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaMod, setPadding));
@@ -110,7 +110,7 @@ public:
 		const float fMax = M_PI / _ovs;
 		const float fStep = (2 * M_PI) / (N * _ovs * _ovs);
 		float f = fMin + f0;
-		size_t i;
+		int i;
 		if (down) {
 			for (i = 0; i < NN; i++) {
 				f += fStep;
