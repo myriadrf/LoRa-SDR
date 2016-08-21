@@ -245,6 +245,11 @@ public:
 		size_t payloadLength = pkt.payload.length + (_crc ? 2 : 0);
 		std::vector<uint8_t> bytes(payloadLength);
 		std::memcpy(bytes.data(), pkt.payload.as<const void *>(), pkt.payload.length);
+		for (size_t i = 0; i < bytes.size(); i++)
+		{
+			std::cout << int(bytes.at(i)) << ", ";
+		}
+		std::cout << "\n";
 				
 		const size_t numCodewords = roundUp(bytes.size() * 2 + (_explicit ? N_HEADER_CODEWORDS:0), PPM);
 		const size_t numSymbols = N_HEADER_SYMBOLS + (numCodewords / PPM - 1) * (4 + _rdd);		// header is always coded with 8 bits

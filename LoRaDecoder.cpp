@@ -383,6 +383,10 @@ public:
             
             packetLength = bytes[0];
             dataLength = packetLength + ((bytes[1] & 1)?5:3);  // include  header and crc
+            std::cout << "packetLength " << packetLength << std::endl;
+            std::cout << "dataLength " << dataLength << std::endl;
+            std::cout << "_hdr " << _hdr << std::endl;
+            std::cout << "_explicit " << _explicit << std::endl;
             
 			cOfs = N_HEADER_CODEWORDS;
 			dOfs = 6;
@@ -473,6 +477,12 @@ public:
 		}
 		
 		//post the output bytes
+        std::cout << "dOfs " << dOfs << std::endl;
+		for (size_t i = 0; i < bytes.size()-dOfs; i++)
+		{
+			std::cout << int(bytes.at(i+dOfs)) << ", ";
+		}
+		std::cout << "\n";
 		Pothos::Packet out;
 		out.payload = Pothos::BufferChunk(typeid(uint8_t), dataLength);
 		std::memcpy(out.payload.as<void *>(), bytes.data()+dOfs, out.payload.length);

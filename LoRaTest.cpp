@@ -122,6 +122,10 @@ POTHOS_TEST_BLOCK("/lora/tests", test_encoder_to_decoder)
             testPlan->set("enablePackets", true);
             testPlan->set("minValue", 0);
             testPlan->set("maxValue", 255);
+            testPlan->set("minBuffers", 1);
+            testPlan->set("maxBuffers", 1);
+            testPlan->set("maxBufferSize", 10);
+            testPlan->set("minBufferSize", 10);
             auto expected = feeder.callProxy("feedTestPlan", testPlan);
 
             //create tester topology
