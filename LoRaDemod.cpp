@@ -67,11 +67,11 @@ class LoRaDemod : public Pothos::Block
 public:
     LoRaDemod(const size_t sf):
         N(1 << sf),
+        _fineSteps(128),
         _detector(N),
         _sync(0x12),
         _thresh(2),
-        _mtu(256),
-        _fineSteps(128)
+        _mtu(256)
     {
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDemod, setSync));
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDemod, setThreshold));
