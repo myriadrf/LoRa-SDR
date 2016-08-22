@@ -103,6 +103,8 @@ POTHOS_TEST_BLOCK("/lora/tests", test_encoder_to_decoder)
 
     std::vector<std::string> testCodingRates;
     testCodingRates.push_back("4/4");
+    testCodingRates.push_back("4/5");
+    testCodingRates.push_back("4/6");
     testCodingRates.push_back("4/7");
     testCodingRates.push_back("4/8");
 
