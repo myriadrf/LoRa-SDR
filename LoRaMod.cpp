@@ -136,11 +136,6 @@ public:
         auto outPort = this->output(0);
 		float freq = 0.0;
 		const size_t NN = N  * _ovs;
-        if (outPort->elements() < NN)
-        {
-            outPort->popBuffer(outPort->elements());
-            return;
-        }
         auto samps = outPort->buffer().as<std::complex<float> *>();
         size_t i = 0;
 
@@ -272,6 +267,7 @@ public:
     {
         if (name == "0")
         {
+            this->output(name)->setReserve(N * _ovs);
             Pothos::BufferManagerArgs args;
             args.bufferSize = N * _ovs  *sizeof(std::complex<float>);
             return Pothos::BufferManager::make("generic", args);
