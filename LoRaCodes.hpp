@@ -301,22 +301,22 @@ static inline unsigned char decodeHamming84sx(const unsigned char b, bool &error
 
 	auto p0 = (b0 ^ b1 ^ b2 ^ b4);
 	auto p1 = (b1 ^ b2 ^ b3 ^ b5);
-	auto p2 = (b0 ^ b1 ^ b4 ^ b6);
+	auto p2 = (b0 ^ b1 ^ b3 ^ b6);
 	auto p3 = (b0 ^ b2 ^ b3 ^ b7);
 
 	auto parity = (p0 << 0) | (p1 << 1) | (p2 << 2) | (p3 << 3);
 	switch (parity & 0xf)
 	{
-	case 0xD: return (b ^ 1);
-	case 0x7: return (b ^ 2);
-	case 0xB: return (b ^ 4);
-	case 0xE: return (b ^ 8);
+	case 0xD: return (b ^ 1) & 0xf;
+	case 0x7: return (b ^ 2) & 0xf;
+	case 0xB: return (b ^ 4) & 0xf;
+	case 0xE: return (b ^ 8) & 0xf;
 	case 0x0:
 	case 0x1:
 	case 0x2:
 	case 0x4:
-	case 0x8: return b;
-	default: error = true; return b;
+	case 0x8: return b & 0xf;
+	default: error = true; return b & 0xf;
 	}
 }
 
@@ -410,21 +410,21 @@ static inline unsigned char decodeHamming74sx(const unsigned char b)
 
 	auto p0 = (b0 ^ b1 ^ b2 ^ b4);
 	auto p1 = (b1 ^ b2 ^ b3 ^ b5);
-	auto p2 = (b0 ^ b1 ^ b4 ^ b6);
+	auto p2 = (b0 ^ b1 ^ b3 ^ b6);
 
 	auto parity = (p0 << 0) | (p1 << 1) | (p2 << 2);
 	switch (parity)
 	{
-	case 0x5: return (b ^ 1);
-	case 0x7: return (b ^ 2);
-	case 0x3: return (b ^ 4);
-	case 0x6: return (b ^ 8);
+	case 0x5: return (b ^ 1) & 0xf;
+	case 0x7: return (b ^ 2) & 0xf;
+	case 0x3: return (b ^ 4) & 0xf;
+	case 0x6: return (b ^ 8) & 0xf;
 	case 0x0:
 	case 0x1:
 	case 0x2:
-	case 0x4: return b;
+	case 0x4: return b & 0xF;
 	}
-	return b;
+	return b & 0xf;
 }
 
 /***********************************************************************
