@@ -29,6 +29,7 @@ POTHOS_MODULE_UTIL(
         LoRaTest.cpp
         TestGen.cpp
 		BlockGen.cpp
+        TestHamming.cpp
     DESTINATION lora
     ENABLE_DOCS
 )
