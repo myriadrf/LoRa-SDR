@@ -310,8 +310,7 @@ public:
 			size_t sOfs = 0;
 			size_t cOfs = 0;
 			if (_rdd != HEADER_RDD) {
-				int n = numSymbols;
-				diagonalDeterleaveSx(symbols.data(), n, codewords.data(), PPM, HEADER_RDD);
+				diagonalDeterleaveSx(symbols.data(), N_HEADER_SYMBOLS, codewords.data(), PPM, HEADER_RDD);
 				if (_explicit) {
 					Sx1272ComputeWhiteningLfsr(codewords.data() + N_HEADER_CODEWORDS, PPM - N_HEADER_CODEWORDS, 0, HEADER_RDD);
 				}
@@ -355,7 +354,7 @@ public:
 		}
 
 		bool error = false;
-		std::vector<uint8_t> bytes(codewords.size() / 2);
+		std::vector<uint8_t> bytes((codewords.size()+1) / 2);
 		size_t dOfs = 0;
 		size_t cOfs = 0;
         
