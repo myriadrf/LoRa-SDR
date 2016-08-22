@@ -47,7 +47,7 @@ POTHOS_TEST_BLOCK("/lora/tests", test_hamming84)
 
 POTHOS_TEST_BLOCK("/lora/tests", test_hamming74)
 {
-    bool error;
+    //bool error;
     unsigned char decoded;
 
     //test hamming 74 with bit errors
@@ -66,6 +66,60 @@ POTHOS_TEST_BLOCK("/lora/tests", test_hamming74)
             unsigned char encoded1err = encoded ^ (1 << bit0);
             decoded = decodeHamming74sx(encoded1err);
             POTHOS_TEST_EQUAL(byte, decoded);
+        }
+    }
+}
+
+POTHOS_TEST_BLOCK("/lora/tests", test_parity64)
+{
+    bool error;
+    unsigned char decoded;
+
+    //test parity 64, see if bit error detected
+    for (size_t i = 0; i < 16; i++)
+    {
+        unsigned char byte = i & 0xff;
+        unsigned char encoded = encodeParity64(byte);
+
+        //check no bit errors
+        error = false;
+        decoded = checkParity64(encoded, error);
+        POTHOS_TEST_TRUE(not error);
+        POTHOS_TEST_EQUAL(byte, decoded);
+
+        for (int bit0 = 0; bit0 < 8; bit0++)
+        {
+            //check 1 bit error
+            unsigned char encoded1err = encoded ^ (1 << bit0);
+            decoded = checkParity64(encoded1err, error);
+            POTHOS_TEST_TRUE(error);
+        }
+    }
+}
+
+POTHOS_TEST_BLOCK("/lora/tests", test_parity54)
+{
+    bool error;
+    unsigned char decoded;
+
+    //test parity 54, see if bit error detected
+    for (size_t i = 0; i < 16; i++)
+    {
+        unsigned char byte = i & 0xff;
+        unsigned char encoded = encodeParity54(byte);
+
+        //check no bit errors
+        error = false;
+        decoded = checkParity54(encoded, error);
+        POTHOS_TEST_TRUE(not error);
+        POTHOS_TEST_EQUAL(byte, decoded);
+
+        for (int bit0 = 0; bit0 < 8; bit0++)
+        {
+            //check 1 bit error
+            unsigned char encoded1err = encoded ^ (1 << bit0);
+            decoded = checkParity54(encoded1err, error);
+            POTHOS_TEST_TRUE(error);
         }
     }
 }
