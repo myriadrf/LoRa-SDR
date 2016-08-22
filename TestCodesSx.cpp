@@ -5,7 +5,7 @@
 #include <iostream>
 #include "LoRaCodes.hpp"
 
-POTHOS_TEST_BLOCK("/lora/tests", test_hamming84)
+POTHOS_TEST_BLOCK("/lora/tests", test_hamming84_sx)
 {
     bool error;
     unsigned char decoded;
@@ -45,7 +45,7 @@ POTHOS_TEST_BLOCK("/lora/tests", test_hamming84)
     }
 }
 
-POTHOS_TEST_BLOCK("/lora/tests", test_hamming74)
+POTHOS_TEST_BLOCK("/lora/tests", test_hamming74_sx)
 {
     //bool error;
     unsigned char decoded;
@@ -70,7 +70,7 @@ POTHOS_TEST_BLOCK("/lora/tests", test_hamming74)
     }
 }
 
-POTHOS_TEST_BLOCK("/lora/tests", test_parity64)
+POTHOS_TEST_BLOCK("/lora/tests", test_parity64_sx)
 {
     bool error;
     unsigned char decoded;
@@ -97,7 +97,7 @@ POTHOS_TEST_BLOCK("/lora/tests", test_parity64)
     }
 }
 
-POTHOS_TEST_BLOCK("/lora/tests", test_parity54)
+POTHOS_TEST_BLOCK("/lora/tests", test_parity54_sx)
 {
     bool error;
     unsigned char decoded;
@@ -120,6 +120,29 @@ POTHOS_TEST_BLOCK("/lora/tests", test_parity54)
             unsigned char encoded1err = encoded ^ (1 << bit0);
             decoded = checkParity54(encoded1err, error);
             POTHOS_TEST_TRUE(error);
+        }
+    }
+}
+
+POTHOS_TEST_BLOCK("/lora/tests", test_interleaver_sx)
+{
+    for (size_t PPM = 7; PPM <= 12; PPM++)
+    {
+        std::cout << "Testing PPM " << PPM << std::endl;
+        for (size_t RDD = 0; RDD <= 4; RDD++)
+        {
+            std::cout << "  with RDD " << RDD << std::endl;
+            std::vector<uint8_t> inputCws(PPM);
+            const auto mask = (1 << (RDD+4))-1;
+            for (auto &x : inputCws) x = std::rand() & mask;
+
+            std::vector<uint16_t> symbols(((RDD+4)*inputCws.size())/PPM);
+            diagonalInterleaveSx(inputCws.data(), inputCws.size(), symbols.data(), PPM, RDD);
+
+            std::vector<uint8_t> outputCws(inputCws.size());
+            diagonalDeterleaveSx(symbols.data(), symbols.size(), outputCws.data(), PPM, RDD);
+
+            POTHOS_TEST_EQUALV(inputCws, outputCws);
         }
     }
 }
