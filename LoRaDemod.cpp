@@ -146,21 +146,6 @@ public:
     {
         auto inPort = this->input(0);
         if (inPort->elements() < N*2) return;
-        if (_rawPort->elements() < N*2)
-        {
-            _rawPort->popBuffer(_rawPort->elements());
-            return;
-        }
-        if (_decPort->elements() < N*2)
-        {
-            _decPort->popBuffer(_decPort->elements());
-            return;
-        }
-
-        if (_fftPort->elements() < N){
-            _fftPort->popBuffer(_fftPort->elements());
-            return;
-        }
         
         size_t total = 0;
         auto inBuff = inPort->buffer().as<const std::complex<float> *>();
@@ -348,10 +333,12 @@ public:
     {
         if (name == "raw" or name == "dec")
         {
+            this->output(name)->setReserve(N * 2);
             Pothos::BufferManagerArgs args;
             args.bufferSize = N*2*sizeof(std::complex<float>);
             return Pothos::BufferManager::make("generic", args);
         }else if (name == "fft"){
+            this->output(name)->setReserve(N);
             Pothos::BufferManagerArgs args;
             args.bufferSize = N*sizeof(std::complex<float>);
             return Pothos::BufferManager::make("generic", args);
@@ -362,15 +349,12 @@ public:
     //! Custom input buffer manager with slabs large enough for fft input
     Pothos::BufferManager::Sptr getInputBufferManager(const std::string &name, const std::string &domain)
     {
-        if (name == "raw" or name == "dec")
+        if (name == "0")
         {
             Pothos::BufferManagerArgs args;
-            args.bufferSize = N*2*sizeof(std::complex<float>);
-            return Pothos::BufferManager::make("circular", args);
-        }else if (name == "fft"){
-            Pothos::BufferManagerArgs args;
-            args.bufferSize = N*sizeof(std::complex<float>);
-            return Pothos::BufferManager::make("circular", args);
+            args.bufferSize = std::max(args.bufferSize,
+                              N*2*sizeof(std::complex<float>));
+            return Pothos::BufferManager::make("generic", args);
         }
         return Pothos::Block::getInputBufferManager(name, domain);
     }

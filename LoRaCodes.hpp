@@ -159,7 +159,7 @@ static inline void Sx1272ComputeWhiteningLfsr(uint8_t *buffer, uint16_t bufferSi
     uint64_t r[2] = {(1 == RDD)?seed2[0]:seed1[0],(1 == RDD)?seed2[1]:seed1[1]};
     int i,j;
     for (i = 0; i < bitOfs;i++){
-        r[i & 1] = (r[i & 1] >> 8) | (((r[i & 1] >> 32) ^ (r[i & 1] >> 24) ^ (r[i & 1] >> 16) ^ r[i & 1]) << 56);
+        r[i & 1] = (r[i & 1] >> 8) | (((r[i & 1] >> 32) ^ (r[i & 1] >> 24) ^ (r[i & 1] >> 16) ^ r[i & 1]) << 56);   // poly: 0x1D
     }
     for (j = 0; j < bufferSize; j++,i++) {
         buffer[j] ^= r[i & 1] & m;
@@ -262,62 +262,61 @@ static inline unsigned char decodeHamming84(const unsigned char b, bool &error)
     return (b2 << 0) | (b4 << 1) | (b5 << 2) | (b6 << 3);
 }
 
-
 /***********************************************************************
-* Encode a 4 bit word into a 8 bits with parity
-* Non standard version used in sx1272.
-* https://en.wikipedia.org/wiki/Hamming_code
-**********************************************************************/
+ * Encode a 4 bit word into a 8 bits with parity
+ * Non standard version used in sx1272.
+ * https://en.wikipedia.org/wiki/Hamming_code
+ **********************************************************************/
 static inline unsigned char encodeHamming84sx(const unsigned char x)
 {
-	auto d0 = (x >> 0) & 0x1;
-	auto d1 = (x >> 1) & 0x1;
-	auto d2 = (x >> 2) & 0x1;
-	auto d3 = (x >> 3) & 0x1;
-
-	unsigned char b = x & 0xf;
-	b |= (d0 ^ d1 ^ d2) << 4;
-	b |= (d1 ^ d2 ^ d3) << 5;
-	b |= (d0 ^ d1 ^ d3) << 6;
-	b |= (d0 ^ d2 ^ d3) << 7;
-	return b;
+    auto d0 = (x >> 0) & 0x1;
+    auto d1 = (x >> 1) & 0x1;
+    auto d2 = (x >> 2) & 0x1;
+    auto d3 = (x >> 3) & 0x1;
+    
+    unsigned char b = x & 0xf;
+    b |= (d0 ^ d1 ^ d2) << 4;
+    b |= (d1 ^ d2 ^ d3) << 5;
+    b |= (d0 ^ d1 ^ d3) << 6;
+    b |= (d0 ^ d2 ^ d3) << 7;
+    return b;
 }
 
 /***********************************************************************
-* Decode 8 bits into a 4 bit word with single bit correction.
-* Non standard version used in sx1272.
-* Set error true when the result is known to be in error
-**********************************************************************/
+ * Decode 8 bits into a 4 bit word with single bit correction.
+ * Non standard version used in sx1272.
+ * Set error true when the result is known to be in error
+ **********************************************************************/
 static inline unsigned char decodeHamming84sx(const unsigned char b, bool &error)
 {
-	auto b0 = (b >> 0) & 0x1;
-	auto b1 = (b >> 1) & 0x1;
-	auto b2 = (b >> 2) & 0x1;
-	auto b3 = (b >> 3) & 0x1;
-	auto b4 = (b >> 4) & 0x1;
-	auto b5 = (b >> 5) & 0x1;
-	auto b6 = (b >> 6) & 0x1;
-	auto b7 = (b >> 7) & 0x1;
-
-	auto p0 = (b0 ^ b1 ^ b2 ^ b4);
-	auto p1 = (b1 ^ b2 ^ b3 ^ b5);
-	auto p2 = (b0 ^ b1 ^ b3 ^ b6);
-	auto p3 = (b0 ^ b2 ^ b3 ^ b7);
-
-	auto parity = (p0 << 0) | (p1 << 1) | (p2 << 2) | (p3 << 3);
-	switch (parity & 0xf)
-	{
-	case 0xD: return (b ^ 1) & 0xf;
-	case 0x7: return (b ^ 2) & 0xf;
-	case 0xB: return (b ^ 4) & 0xf;
-	case 0xE: return (b ^ 8) & 0xf;
-	case 0x0:
-	case 0x1:
-	case 0x2:
-	case 0x4:
-	case 0x8: return b & 0xf;
-	default: error = true; return b & 0xf;
-	}
+    auto b0 = (b >> 0) & 0x1;
+    auto b1 = (b >> 1) & 0x1;
+    auto b2 = (b >> 2) & 0x1;
+    auto b3 = (b >> 3) & 0x1;
+    auto b4 = (b >> 4) & 0x1;
+    auto b5 = (b >> 5) & 0x1;
+    auto b6 = (b >> 6) & 0x1;
+    auto b7 = (b >> 7) & 0x1;
+    
+    auto p0 = (b0 ^ b1 ^ b2 ^ b4);
+    auto p1 = (b1 ^ b2 ^ b3 ^ b5);
+    auto p2 = (b0 ^ b1 ^ b3 ^ b6);
+    auto p3 = (b0 ^ b2 ^ b3 ^ b7);
+    
+    auto parity = (p0 << 0) | (p1 << 1) | (p2 << 2) | (p3 << 3);
+    switch (parity & 0xf)
+    {
+        case 0xD: return (b ^ 1) & 0xf;
+        case 0x7: return (b ^ 2) & 0xf;
+        case 0xB: return (b ^ 4) & 0xf;
+        case 0xE: return (b ^ 8) & 0xf;
+        case 0x0:
+        case 0x1:
+        case 0x2:
+        case 0x4:
+        case 0x8: return b & 0xf;
+        default: error = true; return b & 0xf;
+    }
 }
 
 /***********************************************************************
@@ -375,56 +374,55 @@ static inline unsigned char decodeHamming74(const unsigned char b)
     return (b2 << 0) | (b4 << 1) | (b5 << 2) | (b6 << 3);
 }
 
-
 /***********************************************************************
-* Encode a 4 bit word into a 7 bits with parity.
-* Non standard version used in sx1272.
-**********************************************************************/
+ * Encode a 4 bit word into a 7 bits with parity.
+ * Non standard version used in sx1272.
+ **********************************************************************/
 static inline unsigned char encodeHamming74sx(const unsigned char x)
 {
-	auto d0 = (x >> 0) & 0x1;
-	auto d1 = (x >> 1) & 0x1;
-	auto d2 = (x >> 2) & 0x1;
-	auto d3 = (x >> 3) & 0x1;
-
-	unsigned char b = x & 0xf;
-	b |= (d0 ^ d1 ^ d2) << 4;
-	b |= (d1 ^ d2 ^ d3) << 5;
-	b |= (d0 ^ d1 ^ d3) << 6;
-	return b;
+    auto d0 = (x >> 0) & 0x1;
+    auto d1 = (x >> 1) & 0x1;
+    auto d2 = (x >> 2) & 0x1;
+    auto d3 = (x >> 3) & 0x1;
+    
+    unsigned char b = x & 0xf;
+    b |= (d0 ^ d1 ^ d2) << 4;
+    b |= (d1 ^ d2 ^ d3) << 5;
+    b |= (d0 ^ d1 ^ d3) << 6;
+    return b;
 }
 
 /***********************************************************************
-* Decode 7 bits into a 4 bit word with single bit correction.
-* Non standard version used in sx1272.
-**********************************************************************/
+ * Decode 7 bits into a 4 bit word with single bit correction.
+ * Non standard version used in sx1272.
+ **********************************************************************/
 static inline unsigned char decodeHamming74sx(const unsigned char b)
 {
-	auto b0 = (b >> 0) & 0x1;
-	auto b1 = (b >> 1) & 0x1;
-	auto b2 = (b >> 2) & 0x1;
-	auto b3 = (b >> 3) & 0x1;
-	auto b4 = (b >> 4) & 0x1;
-	auto b5 = (b >> 5) & 0x1;
-	auto b6 = (b >> 6) & 0x1;
-
-	auto p0 = (b0 ^ b1 ^ b2 ^ b4);
-	auto p1 = (b1 ^ b2 ^ b3 ^ b5);
-	auto p2 = (b0 ^ b1 ^ b3 ^ b6);
-
-	auto parity = (p0 << 0) | (p1 << 1) | (p2 << 2);
-	switch (parity)
-	{
-	case 0x5: return (b ^ 1) & 0xf;
-	case 0x7: return (b ^ 2) & 0xf;
-	case 0x3: return (b ^ 4) & 0xf;
-	case 0x6: return (b ^ 8) & 0xf;
-	case 0x0:
-	case 0x1:
-	case 0x2:
-	case 0x4: return b & 0xF;
-	}
-	return b & 0xf;
+    auto b0 = (b >> 0) & 0x1;
+    auto b1 = (b >> 1) & 0x1;
+    auto b2 = (b >> 2) & 0x1;
+    auto b3 = (b >> 3) & 0x1;
+    auto b4 = (b >> 4) & 0x1;
+    auto b5 = (b >> 5) & 0x1;
+    auto b6 = (b >> 6) & 0x1;
+    
+    auto p0 = (b0 ^ b1 ^ b2 ^ b4);
+    auto p1 = (b1 ^ b2 ^ b3 ^ b5);
+    auto p2 = (b0 ^ b1 ^ b3 ^ b6);
+    
+    auto parity = (p0 << 0) | (p1 << 1) | (p2 << 2);
+    switch (parity)
+    {
+        case 0x5: return (b ^ 1) & 0xf;
+        case 0x7: return (b ^ 2) & 0xf;
+        case 0x3: return (b ^ 4) & 0xf;
+        case 0x6: return (b ^ 8) & 0xf;
+        case 0x0:
+        case 0x1:
+        case 0x2:
+        case 0x4: return b & 0xF;
+    }
+    return b & 0xf;
 }
 
 /***********************************************************************

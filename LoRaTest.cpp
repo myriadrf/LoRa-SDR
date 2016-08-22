@@ -159,6 +159,9 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
     auto collector = registry.callProxy("/blocks/collector_sink", "uint8");
 
     std::vector<std::string> testCodingRates;
+    testCodingRates.push_back("4/4");
+    testCodingRates.push_back("4/5");
+    testCodingRates.push_back("4/6");
     testCodingRates.push_back("4/7");
     testCodingRates.push_back("4/8");
 
@@ -198,7 +201,7 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
             topology.connect(demod, 0, decoder, 0);
             topology.connect(decoder, 0, collector, 0);
             topology.commit();
-            POTHOS_TEST_TRUE(topology.waitInactive());
+            POTHOS_TEST_TRUE(topology.waitInactive(0.1, 0));
             //std::cout << topology.queryJSONStats() << std::endl;
         }
 
