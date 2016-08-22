@@ -31,14 +31,14 @@ public:
         size_t maxIndex = 0;
         Type maxValue = 0;
         size_t N = _fftOutput.size();
-        Type avg = 0;
+        Type total = 0;
         for (size_t i = 0; i < N; i++)
         {
             auto bin = _fftOutput[i];
             auto re = bin.real();
             auto im = bin.imag();
             auto mag2 = re*re + im*im;
-            avg += mag2;
+            total += mag2;
             if (mag2 > maxValue)
             {
                 maxIndex = i;
@@ -46,7 +46,7 @@ public:
             }
         }
         
-        powerAvg = (avg - maxValue) * _powerScale;
+        powerAvg = (total - maxValue)/(N-1) * _powerScale;
         power = maxValue * _powerScale;
         
         auto left = _fftOutput[maxIndex > 0?maxIndex-1:N-1];
