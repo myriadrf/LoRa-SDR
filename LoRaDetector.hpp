@@ -49,11 +49,13 @@ public:
         powerAvg = (total - maxValue)/(N-1) * _powerScale;
         power = maxValue * _powerScale;
         
-        auto left = _fftOutput[maxIndex > 0?maxIndex-1:N-1];
-        auto right = _fftOutput[maxIndex < N-1?maxIndex+1:0];
-        
-        fIndex = 0.5 * (abs(right) - abs(left)) / (2.0 * sqrt(maxValue) - abs(right) - abs(left));
-        
+        auto left = std::abs(_fftOutput[maxIndex > 0?maxIndex-1:N-1]);
+        auto right = std::abs(_fftOutput[maxIndex < N-1?maxIndex+1:0]);
+
+        const auto demon = (2.0 * sqrt(maxValue) - right - left);
+        if (demon == 0.0) fIndex = 0.0; //check for divide by 0
+        else fIndex = 0.5 * (right - left) / demon;
+
         return maxIndex;
     }
     
