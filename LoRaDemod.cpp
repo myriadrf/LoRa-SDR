@@ -70,7 +70,7 @@ public:
         _fineSteps(128),
         _detector(N),
         _sync(0x12),
-        _thresh(2),
+        _thresh(-30.0),
         _mtu(256)
     {
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDemod, setSync));
@@ -128,7 +128,7 @@ public:
 
     void setThreshold(const double thresh_dB)
     {
-        _thresh = float(std::pow(10.0, thresh_dB/10));
+        _thresh = thresh_dB;
     }
 
     void setMTU(const size_t mtu)
@@ -169,9 +169,7 @@ public:
         float fIndex = 0;
         
         auto value = _detector.detect(power,powerAvg,fIndex);
-        if (0 != powerAvg){
-            snr = power / powerAvg;
-        }
+        snr = power - powerAvg;
         const bool squelched = (snr < _thresh);
         
         memcpy(fftBuff,&_detector.getOutput()->front(),sizeof(float) * 2 * N);

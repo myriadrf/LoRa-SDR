@@ -159,9 +159,10 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
     auto collector = registry.callProxy("/blocks/collector_sink", "uint8");
 
     std::vector<std::string> testCodingRates;
-    testCodingRates.push_back("4/4");
-    testCodingRates.push_back("4/5");
-    testCodingRates.push_back("4/6");
+    //these first few dont have error correction
+    //testCodingRates.push_back("4/4");
+    //testCodingRates.push_back("4/5");
+    //testCodingRates.push_back("4/6");
     testCodingRates.push_back("4/7");
     testCodingRates.push_back("4/8");
 
