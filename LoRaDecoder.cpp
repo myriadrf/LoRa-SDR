@@ -79,11 +79,6 @@
  * |option [Off] false
  * |default true
  *
- * |param legacy Enable/disable legacy mode.
- * |option [On] true
- * |option [Off] false
- * |default true
- *
  * |factory /lora/lora_decoder()
  * |setter setSpreadFactor(sf)
  * |setter setSymbolSize(ppm)
@@ -95,7 +90,6 @@
  * |setter enableWhitening(whitening)
  * |setter enableInterleaving(interleaving)
  * |setter enableErrorCheck(errorCheck)
- * |setter enableLegacy(legacy)
  **********************************************************************/
 class LoRaDecoder : public Pothos::Block
 {
@@ -107,7 +101,6 @@ public:
         _whitening(true),
 		_crcc(false),
 		_interleaving(true),
-		_legacy(false),
 		_errorCheck(false),
 		_explicit(true),
         _hdr(false),
@@ -120,7 +113,6 @@ public:
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, enableWhitening));
 		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, enableCrcc));
 		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, enableInterleaving));
-		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, enableLegacy));
 		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, enableExplicit));
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, enableHdr));
 		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDecoder, setDataLength));
@@ -167,10 +159,6 @@ public:
 		_interleaving = interleaving;
 	}
 
-	void enableLegacy(const bool legacy) {
-		_legacy = legacy;
-	}
-
 	void enableExplicit(const bool __explicit) {
 		_explicit = __explicit;
 	}
@@ -204,83 +192,7 @@ public:
         this->emitSignal("dropped", _dropped);
     }
 
-	void work_legacy(void) {
-		auto inPort = this->input(0);
-		auto outPort = this->output(0);
-		if (not inPort->hasMessage()) return;
-
-		const size_t PPM = (_ppm == 0) ? _sf : _ppm;
-		if (PPM > _sf) throw Pothos::Exception("LoRaDecoder::work()", "failed check: PPM <= SF");
-
-		//extract the input symbols
-		auto msg = inPort->popMessage();
-		auto pkt = msg.extract<Pothos::Packet>();
-        
-		const size_t numSymbols = roundUp(pkt.payload.elements(), 4 + _rdd);
-		const size_t numCodewords = (numSymbols / (4 + _rdd))*PPM;
-		std::vector<uint16_t> symbols(numSymbols);
-		std::memcpy(symbols.data(), pkt.payload.as<const void *>(), pkt.payload.length);
-
-		//gray encode, when SF > PPM, depad the LSBs with rounding
-		for (auto &sym : symbols)
-		{
-			sym += (1 << (_sf - PPM)) / 2; //increment by 1/2
-			sym >>= (_sf - PPM); //down shift to PPM bits
-			sym = binaryToGray16(sym);
-		}
-
-		//deinterleave the symbols into codewords
-		std::vector<uint8_t> codewords(numCodewords);
-		if (_interleaving) {
-			diagonalDeterleave(symbols.data(), numSymbols, codewords.data(), PPM, _rdd);
-		}
-
-		//decode each codeword as 2 bytes with correction
-		bool error = false;
-		std::vector<uint8_t> bytes(codewords.size() / 2);
-		if (_rdd == 0) for (size_t i = 0; i < bytes.size(); i++) 
-		{
-			bytes[i] = codewords[i * 2 + 0] << 4;
-			bytes[i] |= codewords[i * 2 + 1] & 0xf;
-		}
-		else if (_rdd == 3) for (size_t i = 0; i < bytes.size(); i++)
-		{
-			bytes[i] = decodeHamming74(codewords[i * 2 + 0]) << 4;
-			bytes[i] |= decodeHamming74(codewords[i * 2 + 1]) & 0xf;
-		}
-		else if (_rdd == 4) for (size_t i = 0; i < bytes.size(); i++)
-		{
-			bytes[i] = decodeHamming84(codewords[i * 2 + 0], error) << 4;
-			bytes[i] |= decodeHamming84(codewords[i * 2 + 1], error) & 0xf;
-		}
-		if (error && _errorCheck) return;
-
-		//undo the whitening
-		if (_whitening)
-			SX1232RadioComputeWhitening(bytes.data(), bytes.size());
-		size_t length = bytes.size();
-		//header and crc
-		if (_crcc) {
-			length = bytes[0];
-			if (length < 2) return this->drop();
-			if (length > bytes.size()) return this->drop();
-			uint8_t crc = checksum8(bytes.data(), length - 1);
-			if (crc != bytes[length - 1]) return this->drop();
-		} else {
-			Pothos::Packet out;
-			out.payload = Pothos::BufferChunk(typeid(uint8_t), length);
-			std::memcpy(out.payload.as<void *>(), bytes.data(), out.payload.length);
-			outPort->postMessage(out);
-			return;
-		}
-		//post the output bytes
-		Pothos::Packet out;
-		out.payload = Pothos::BufferChunk(typeid(uint8_t), length - 2);
-		std::memcpy(out.payload.as<void *>(), bytes.data() + 1, out.payload.length);
-		outPort->postMessage(out);
-	}
-
-	void work_sx(void){
+	void work(void){
 		auto inPort = this->input(0);
 		auto outPort = this->output(0);
 		if (not inPort->hasMessage()) return;
@@ -480,19 +392,12 @@ public:
 
     }
 
-	void work(void) {
-		if (_legacy)
-			work_legacy();
-		else
-			work_sx();
-	}
-
 private:
 
     void drop(void)
     {
         _dropped++;
-        this->callVoid("dropped", _dropped);
+        this->emitSignal("dropped", _dropped);
     }
 
     size_t _sf;
@@ -501,7 +406,6 @@ private:
     bool _whitening;
 	bool _crcc;
 	bool _interleaving;
-	bool _legacy;
 	bool _errorCheck;
 	bool _explicit;
     bool _hdr;

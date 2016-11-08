@@ -49,7 +49,7 @@
  * |param thresh[Threshold] The minimum required level in dB for the detector.
  * The threshold level is used to enter and exit the demodulation state machine.
  * |units dB
- * |default 10.0
+ * |default -30.0
  *
  * |param mtu[Symbol MTU] Produce MTU at most symbols after sync is found.
  * The demodulator does not inspect the payload and will produce at most

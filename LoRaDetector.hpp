@@ -10,6 +10,7 @@ class LoRaDetector
 {
 public:
     LoRaDetector(const size_t N):
+        N(N),
         _fftInput(N),
         _fftOutput(N),
         _fft(N, false)
@@ -31,7 +32,6 @@ public:
         _fft.transform(_fftInput.data(), fftOutput);
         size_t maxIndex = 0;
         Type maxValue = 0;
-        size_t N = _fftOutput.size();
         double total = 0;
         for (size_t i = 0; i < N; i++)
         {
@@ -64,6 +64,7 @@ public:
     }
 
 private:
+    const size_t N;
     Type _powerScale;
     std::vector<std::complex<Type>> _fftInput;
     std::vector<std::complex<Type>> _fftOutput;
