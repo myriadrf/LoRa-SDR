@@ -264,9 +264,9 @@ public:
             //std::cout << "error1 " << error << std::endl;
             _freqError = (_freqError + error)/2;
             
-            this->callVoid("error", _freqError);
-            this->callVoid("power", 10*log10(power));
-            this->callVoid("snr", 10 * log(snr));
+            this->emitSignal("error", _freqError);
+            this->emitSignal("power", 10*log10(power));
+            this->emitSignal("snr", 10 * log(snr));
         } break;
 
         ////////////////////////////////////////////////////////////////

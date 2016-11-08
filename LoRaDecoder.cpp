@@ -201,7 +201,7 @@ public:
     void activate(void)
     {
         _dropped = 0;
-        this->callVoid("dropped", _dropped);
+        this->emitSignal("dropped", _dropped);
     }
 
 	void work_legacy(void) {
