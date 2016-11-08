@@ -168,12 +168,10 @@ public:
         float snr = 0;
         float fIndex = 0;
         
-        auto value = _detector.detect(power,powerAvg,fIndex);
+        auto value = _detector.detect(power,powerAvg,fIndex,fftBuff);
         snr = power - powerAvg;
         const bool squelched = (snr < _thresh);
-        
-        memcpy(fftBuff,&_detector.getOutput()->front(),sizeof(float) * 2 * N);
-       
+
         switch (_state)
         {
         ////////////////////////////////////////////////////////////////
