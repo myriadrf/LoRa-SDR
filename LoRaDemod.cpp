@@ -261,10 +261,10 @@ public:
             if (value > N/2) error -= N;
             //std::cout << "error1 " << error << std::endl;
             _freqError = (_freqError + error)/2;
-            
+
             this->emitSignal("error", _freqError);
-            this->emitSignal("power", 10*log10(power));
-            this->emitSignal("snr", 10 * log(snr));
+            this->emitSignal("power", power);
+            this->emitSignal("snr", snr);
         } break;
 
         ////////////////////////////////////////////////////////////////
