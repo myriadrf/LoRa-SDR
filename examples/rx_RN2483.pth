@@ -200,6 +200,20 @@
                     "id" : "SDRSource0",
                     "inputDesc" : [
                         {
+                            "alias" : "setCallingMode",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "setCallingMode",
+                            "size" : 1
+                        },
+                        {
+                            "alias" : "setEventSquash",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "setEventSquash",
+                            "size" : 1
+                        },
+                        {
                             "alias" : "setupDevice",
                             "dtype" : "unspecified",
                             "isSigSlot" : true,
@@ -361,13 +375,6 @@
                             "size" : 1
                         },
                         {
-                            "alias" : "getGainMode0",
-                            "dtype" : "unspecified",
-                            "isSigSlot" : true,
-                            "name" : "getGainMode0",
-                            "size" : 1
-                        },
-                        {
                             "alias" : "setAntenna0",
                             "dtype" : "unspecified",
                             "isSigSlot" : true,
@@ -400,6 +407,13 @@
                             "dtype" : "unspecified",
                             "isSigSlot" : true,
                             "name" : "getSensor0",
+                            "size" : 1
+                        },
+                        {
+                            "alias" : "setChannelSetting0",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "setChannelSetting0",
                             "size" : 1
                         },
                         {
@@ -512,6 +526,13 @@
                             "dtype" : "unspecified",
                             "isSigSlot" : true,
                             "name" : "setHardwareTime",
+                            "size" : 1
+                        },
+                        {
+                            "alias" : "getHardwareTime",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "getHardwareTime",
                             "size" : 1
                         },
                         {
@@ -912,6 +933,14 @@
                         {
                             "key" : "channelSettings",
                             "value" : "{}"
+                        },
+                        {
+                            "key" : "callingMode",
+                            "value" : "\"ACTIVATE_WAITS\""
+                        },
+                        {
+                            "key" : "eventSquash",
+                            "value" : "false"
                         }
                     ],
                     "rotation" : 0,
@@ -976,6 +1005,13 @@
                             "size" : 8
                         },
                         {
+                            "alias" : "fft",
+                            "dtype" : "complex_float32",
+                            "isSigSlot" : false,
+                            "name" : "fft",
+                            "size" : 8
+                        },
+                        {
                             "alias" : "error",
                             "dtype" : "unspecified",
                             "isSigSlot" : true,
@@ -987,6 +1023,13 @@
                             "dtype" : "unspecified",
                             "isSigSlot" : true,
                             "name" : "power",
+                            "size" : 1
+                        },
+                        {
+                            "alias" : "snr",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "snr",
                             "size" : 1
                         }
                     ],
@@ -1004,7 +1047,7 @@
                         },
                         {
                             "key" : "thresh",
-                            "value" : "20.0"
+                            "value" : "-30.0"
                         },
                         {
                             "key" : "mtu",
@@ -1012,9 +1055,9 @@
                         }
                     ],
                     "rotation" : 0,
-                    "selected" : false,
+                    "selected" : true,
                     "what" : "Block",
-                    "zValue" : 563
+                    "zValue" : 589
                 },
                 {
                     "activeEditTab" : "Axis",
@@ -1696,7 +1739,7 @@
                     "properties" : [
                         {
                             "key" : "title",
-                            "value" : "\"Bin power\""
+                            "value" : "\"SNR\""
                         },
                         {
                             "key" : "formatStr",
@@ -1710,7 +1753,7 @@
                     "rotation" : 0,
                     "selected" : false,
                     "what" : "Block",
-                    "zValue" : 472
+                    "zValue" : 588
                 },
                 {
                     "affinityZone" : "",
@@ -1871,7 +1914,7 @@
                     "selected" : false,
                     "sigSlots" : [
                         [
-                            "power",
+                            "snr",
                             "setFloatValue"
                         ]
                     ],
@@ -1880,7 +1923,7 @@
                     "slotId" : "TextDisplay0",
                     "slotKey" : "slots",
                     "what" : "Connection",
-                    "zValue" : 0
+                    "zValue" : 587
                 },
                 {
                     "enabled" : true,
@@ -1903,14 +1946,29 @@
                     "zValue" : 0
                 },
                 {
+                    "enabled" : true,
+                    "id" : "Connection_LoRaDemod00_LogicAnalyzer00",
+                    "inputId" : "LogicAnalyzer0",
+                    "inputKey" : "0",
+                    "outputId" : "LoRaDemod0",
+                    "outputKey" : "0",
+                    "positionX" : 0,
+                    "positionY" : 0,
+                    "rotation" : 0,
+                    "selected" : false,
+                    "what" : "Connection",
+                    "zValue" : 0
+                },
+                {
                     "blockId" : "WaveMonitor0",
                     "enabled" : true,
-                    "height" : 169,
+                    "height" : 183,
                     "id" : "WidgetWaveMonitor0",
                     "positionX" : 55,
                     "positionY" : 242,
                     "rotation" : 0,
                     "selected" : false,
+                    "state" : "AAAACAAAAAADAAAADgB2AGkAcwBpAGIAbABlAAAADQAAAAAAAAAACgBzAHQAYQBjAGsAAAAJAAAAAAEAAAAUAAAAAAAAAAAAv\/AAAAAAAABAUGJN0vGp\/EAAAAAAAAAAAAAACgBpAG4AZABlAHgAAAADAAAAAAA=",
                     "what" : "Widget",
                     "width" : 919,
                     "zValue" : 570
@@ -1924,6 +1982,7 @@
                     "positionY" : 432,
                     "rotation" : 0,
                     "selected" : false,
+                    "state" : "AAAACAAAAAADAAAADgB2AGkAcwBpAGIAbABlAAAADQAAAAAAAAAACgBzAHQAYQBjAGsAAAAJAAAAAAEAAAAUAAAAAAAAAAAAv4R64UeuFHtAUGJN0vGp\/D+UeuFHrhR7AAAACgBpAG4AZABlAHgAAAADAAAAAAA=",
                     "what" : "Widget",
                     "width" : 919,
                     "zValue" : 580
@@ -1953,20 +2012,6 @@
                     "what" : "Widget",
                     "width" : 127,
                     "zValue" : 582
-                },
-                {
-                    "enabled" : true,
-                    "id" : "Connection_LoRaDemod00_LogicAnalyzer00",
-                    "inputId" : "LogicAnalyzer0",
-                    "inputKey" : "0",
-                    "outputId" : "LoRaDemod0",
-                    "outputKey" : "0",
-                    "positionX" : 0,
-                    "positionY" : 0,
-                    "rotation" : 0,
-                    "selected" : false,
-                    "what" : "Connection",
-                    "zValue" : 0
                 },
                 {
                     "blockId" : "LogicAnalyzer0",

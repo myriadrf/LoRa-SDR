@@ -29,6 +29,7 @@
                     "positionY" : 5,
                     "rotation" : 0,
                     "selected" : false,
+                    "state" : "AAAACAAAAAADAAAADgB2AGkAcwBpAGIAbABlAAAADQAAAAAAAAAACgBzAHQAYQBjAGsAAAAJAAAAAAEAAAAUAMBvQAAAAAAAwE4AAAAAAABAf0AAAAAAAEBOAAAAAAAAAAAACgBpAG4AZABlAHgAAAADAAAAAAA=",
                     "what" : "Widget",
                     "width" : 438,
                     "zValue" : 631
@@ -42,6 +43,7 @@
                     "positionY" : 57,
                     "rotation" : 0,
                     "selected" : false,
+                    "state" : "AAAACAAAAAADAAAADgB2AGkAcwBpAGIAbABlAAAADQAAAAAAAAAACgBzAHQAYQBjAGsAAAAJAAAAAAEAAAAUAAAAAAAAAAAAv\/AAAAAAAABAAGJN0vGp\/EAAAAAAAAAAAAAACgBpAG4AZABlAHgAAAADAAAAAAA=",
                     "what" : "Widget",
                     "width" : 365,
                     "zValue" : 636
@@ -49,7 +51,7 @@
                 {
                     "blockId" : "ChatBox1",
                     "enabled" : true,
-                    "height" : 246,
+                    "height" : 250,
                     "id" : "WidgetChatBox1",
                     "positionX" : 839,
                     "positionY" : 131,
@@ -62,12 +64,13 @@
                 {
                     "blockId" : "NumericEntry0",
                     "enabled" : true,
-                    "height" : 45,
+                    "height" : 60,
                     "id" : "WidgetNumericEntry0",
                     "positionX" : 8,
                     "positionY" : 8,
                     "rotation" : 0,
                     "selected" : false,
+                    "state" : "AAAABgDAPgAAAAAAAA==",
                     "what" : "Widget",
                     "width" : 367,
                     "zValue" : 634
@@ -75,7 +78,7 @@
                 {
                     "blockId" : "TextDisplay0",
                     "enabled" : true,
-                    "height" : 22,
+                    "height" : 26,
                     "id" : "WidgetTextDisplay0",
                     "positionX" : 832,
                     "positionY" : 90,
@@ -88,7 +91,7 @@
                 {
                     "blockId" : "TextDisplay1",
                     "enabled" : true,
-                    "height" : 22,
+                    "height" : 26,
                     "id" : "WidgetTextDisplay1",
                     "positionX" : 828,
                     "positionY" : 7,
@@ -107,6 +110,7 @@
                     "positionY" : 240,
                     "rotation" : 0,
                     "selected" : false,
+                    "state" : "AAAACAAAAAADAAAADgB2AGkAcwBpAGIAbABlAAAADQAAAAAAAAAACgBzAHQAYQBjAGsAAAAJAAAAAAEAAAAUAAAAAAAAAAAAwAmZmZmZmZpANHrhR64Ue0AZmZmZmZmaAAAACgBpAG4AZABlAHgAAAADAAAAAAA=",
                     "what" : "Widget",
                     "width" : 809,
                     "zValue" : 629
@@ -114,7 +118,7 @@
                 {
                     "blockId" : "TextDisplay2",
                     "enabled" : true,
-                    "height" : 22,
+                    "height" : 26,
                     "id" : "WidgetTextDisplay2",
                     "positionX" : 829,
                     "positionY" : 36,
@@ -127,7 +131,7 @@
                 {
                     "blockId" : "TextDisplay3",
                     "enabled" : true,
-                    "height" : 22,
+                    "height" : 26,
                     "id" : "WidgetTextDisplay3",
                     "positionX" : 830,
                     "positionY" : 62,
@@ -146,13 +150,14 @@
                     "positionY" : 411,
                     "rotation" : 0,
                     "selected" : false,
+                    "state" : "AAAACAAAAAADAAAADgB2AGkAcwBpAGIAbABlAAAADQAAAAAAAAAACgBzAHQAYQBjAGsAAAAJAAAAAAEAAAAUAAAAAAAAAAAAwAmZmZmZmZpANHrhR64Ue0AZmZmZmZmaAAAACgBpAG4AZABlAHgAAAADAAAAAAA=",
                     "what" : "Widget",
                     "width" : 815,
                     "zValue" : 624
                 }
             ],
-            "pageName" : "Display",
-            "selected" : true
+            "pageName" : "D&isplay",
+            "selected" : false
         },
         {
             "graphObjects" : [
@@ -190,6 +195,20 @@
                             "size" : 1
                         },
                         {
+                            "alias" : "enableExplicit",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "enableExplicit",
+                            "size" : 1
+                        },
+                        {
+                            "alias" : "enableCrc",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "enableCrc",
+                            "size" : 1
+                        },
+                        {
                             "alias" : "0",
                             "dtype" : "unspecified",
                             "isSigSlot" : false,
@@ -221,6 +240,14 @@
                         {
                             "key" : "cr",
                             "value" : "\"4\/8\""
+                        },
+                        {
+                            "key" : "explicit",
+                            "value" : "true"
+                        },
+                        {
+                            "key" : "crc",
+                            "value" : "true"
                         },
                         {
                             "key" : "whitening",
@@ -259,6 +286,13 @@
                             "size" : 1
                         },
                         {
+                            "alias" : "setOvs",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "setOvs",
+                            "size" : 1
+                        },
+                        {
                             "alias" : "0",
                             "dtype" : "unspecified",
                             "isSigSlot" : false,
@@ -294,6 +328,10 @@
                         {
                             "key" : "ampl",
                             "value" : "1.0"
+                        },
+                        {
+                            "key" : "ovs",
+                            "value" : "1"
                         }
                     ],
                     "rotation" : 0,
@@ -358,6 +396,13 @@
                             "size" : 8
                         },
                         {
+                            "alias" : "fft",
+                            "dtype" : "complex_float32",
+                            "isSigSlot" : false,
+                            "name" : "fft",
+                            "size" : 8
+                        },
+                        {
                             "alias" : "error",
                             "dtype" : "unspecified",
                             "isSigSlot" : true,
@@ -369,6 +414,13 @@
                             "dtype" : "unspecified",
                             "isSigSlot" : true,
                             "name" : "power",
+                            "size" : 1
+                        },
+                        {
+                            "alias" : "snr",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "snr",
                             "size" : 1
                         }
                     ],
@@ -386,7 +438,7 @@
                         },
                         {
                             "key" : "thresh",
-                            "value" : "3"
+                            "value" : "-30.0"
                         },
                         {
                             "key" : "mtu",
@@ -394,9 +446,9 @@
                         }
                     ],
                     "rotation" : 0,
-                    "selected" : false,
+                    "selected" : true,
                     "what" : "Block",
-                    "zValue" : 451
+                    "zValue" : 457
                 },
                 {
                     "affinityZone" : "",
@@ -710,6 +762,48 @@
                             "size" : 1
                         },
                         {
+                            "alias" : "enableCrcc",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "enableCrcc",
+                            "size" : 1
+                        },
+                        {
+                            "alias" : "enableInterleaving",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "enableInterleaving",
+                            "size" : 1
+                        },
+                        {
+                            "alias" : "enableExplicit",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "enableExplicit",
+                            "size" : 1
+                        },
+                        {
+                            "alias" : "enableHdr",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "enableHdr",
+                            "size" : 1
+                        },
+                        {
+                            "alias" : "setDataLength",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "setDataLength",
+                            "size" : 1
+                        },
+                        {
+                            "alias" : "enableErrorCheck",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "enableErrorCheck",
+                            "size" : 1
+                        },
+                        {
                             "alias" : "0",
                             "dtype" : "unspecified",
                             "isSigSlot" : false,
@@ -750,7 +844,31 @@
                             "value" : "\"4\/8\""
                         },
                         {
+                            "key" : "explicit",
+                            "value" : "true"
+                        },
+                        {
+                            "key" : "hdr",
+                            "value" : "false"
+                        },
+                        {
+                            "key" : "dataLength",
+                            "value" : "8"
+                        },
+                        {
+                            "key" : "crcc",
+                            "value" : "false"
+                        },
+                        {
                             "key" : "whitening",
+                            "value" : "true"
+                        },
+                        {
+                            "key" : "interleaving",
+                            "value" : "true"
+                        },
+                        {
+                            "key" : "errorCheck",
                             "value" : "true"
                         }
                     ],
@@ -1436,7 +1554,7 @@
                     "properties" : [
                         {
                             "key" : "title",
-                            "value" : "\"Power\""
+                            "value" : "\"SNR\""
                         },
                         {
                             "key" : "formatStr",
@@ -1450,7 +1568,7 @@
                     "rotation" : 180,
                     "selected" : false,
                     "what" : "Block",
-                    "zValue" : 410
+                    "zValue" : 456
                 },
                 {
                     "affinityZone" : "",
@@ -2238,7 +2356,7 @@
                     "selected" : false,
                     "sigSlots" : [
                         [
-                            "power",
+                            "snr",
                             "setFloatValue"
                         ]
                     ],
@@ -2247,7 +2365,7 @@
                     "slotId" : "TextDisplay3",
                     "slotKey" : "slots",
                     "what" : "Connection",
-                    "zValue" : 0
+                    "zValue" : 455
                 },
                 {
                     "enabled" : true,
@@ -2313,7 +2431,7 @@
                 }
             ],
             "pageName" : "Modem",
-            "selected" : false
+            "selected" : true
         },
         {
             "graphObjects" : [
@@ -2855,6 +2973,10 @@
                             "value" : "true"
                         },
                         {
+                            "key" : "colorMap",
+                            "value" : "\"rainbow\""
+                        },
+                        {
                             "key" : "freqLabelId",
                             "value" : "\"rxFreq\""
                         },
@@ -2890,6 +3012,13 @@
                             "isSigSlot" : true,
                             "name" : "setExpression",
                             "size" : 1
+                        },
+                        {
+                            "alias" : "setGlobals",
+                            "dtype" : "unspecified",
+                            "isSigSlot" : true,
+                            "name" : "setGlobals",
+                            "size" : 1
                         }
                     ],
                     "outputDesc" : [
@@ -2912,6 +3041,10 @@
                         {
                             "key" : "expr",
                             "value" : "\"pow(10.0, power\/20.0)\""
+                        },
+                        {
+                            "key" : "globals",
+                            "value" : "{}"
                         }
                     ],
                     "rotation" : 0,
