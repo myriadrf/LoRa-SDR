@@ -47,10 +47,10 @@
  * |default 1
  *
  * |factory /lora/lora_mod(sf)
+ * |initializer setOvs(ovs)
  * |setter setSync(sync)
  * |setter setPadding(padding)
  * |setter setAmplitude(ampl)
- * |setter setOvs(ovs)
  **********************************************************************/
 class LoRaMod : public Pothos::Block
 {

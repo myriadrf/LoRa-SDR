@@ -158,7 +158,8 @@ public:
             auto samp = inBuff[i];
             auto decd = samp*_chirpTable[i] * _fineTuneTable[_fineTuneIndex];
             _fineTuneIndex -= _finefreqError * _fineSteps;
-            if (_fineTuneIndex < 0) _fineTuneIndex += N * _fineSteps;else if (_fineTuneIndex >= N * _fineSteps) _fineTuneIndex -= N * _fineSteps;
+            if (_fineTuneIndex < 0) _fineTuneIndex += N * _fineSteps;
+            else if (_fineTuneIndex >= int(N * _fineSteps)) _fineTuneIndex -= N * _fineSteps;
             rawBuff[i] = samp;
             decBuff[i] = decd;
             _detector.feed(i, decd);
@@ -193,7 +194,8 @@ public:
                     auto samp = inBuff[i + N];
                     auto decd = samp*_chirpTable[i] * _fineTuneTable[ft];
                     ft -= _finefreqError * _fineSteps;
-                    if (ft < 0) ft += N * _fineSteps;else if (ft >= N * _fineSteps) ft -= N * _fineSteps;
+                    if (ft < 0) ft += N * _fineSteps;
+                    else if (ft >= int(N * _fineSteps)) ft -= N * _fineSteps;
                     rawBuff[i+N] = samp;
                     decBuff[i+N] = decd;
                     _detector.feed(i, decd);
