@@ -49,7 +49,7 @@
  * |param thresh[Threshold] The minimum required level in dB for the detector.
  * The threshold level is used to enter and exit the demodulation state machine.
  * |units dB
- * |default 10.0
+ * |default -30.0
  *
  * |param mtu[Symbol MTU] Produce MTU at most symbols after sync is found.
  * The demodulator does not inspect the payload and will produce at most
@@ -70,7 +70,7 @@ public:
         _fineSteps(128),
         _detector(N),
         _sync(0x12),
-        _thresh(2),
+        _thresh(-30.0),
         _mtu(256)
     {
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDemod, setSync));
@@ -128,7 +128,7 @@ public:
 
     void setThreshold(const double thresh_dB)
     {
-        _thresh = float(std::pow(10.0, thresh_dB/10));
+        _thresh = thresh_dB;
     }
 
     void setMTU(const size_t mtu)
@@ -158,7 +158,8 @@ public:
             auto samp = inBuff[i];
             auto decd = samp*_chirpTable[i] * _fineTuneTable[_fineTuneIndex];
             _fineTuneIndex -= _finefreqError * _fineSteps;
-            if (_fineTuneIndex < 0) _fineTuneIndex += N * _fineSteps;else if (_fineTuneIndex >= N * _fineSteps) _fineTuneIndex -= N * _fineSteps;
+            if (_fineTuneIndex < 0) _fineTuneIndex += N * _fineSteps;
+            else if (_fineTuneIndex >= int(N * _fineSteps)) _fineTuneIndex -= N * _fineSteps;
             rawBuff[i] = samp;
             decBuff[i] = decd;
             _detector.feed(i, decd);
@@ -168,14 +169,10 @@ public:
         float snr = 0;
         float fIndex = 0;
         
-        auto value = _detector.detect(power,powerAvg,fIndex);
-        if (0 != powerAvg){
-            snr = power / powerAvg;
-        }
+        auto value = _detector.detect(power,powerAvg,fIndex,fftBuff);
+        snr = power - powerAvg;
         const bool squelched = (snr < _thresh);
-        
-        memcpy(fftBuff,&_detector.getOutput()->front(),sizeof(float) * 2 * N);
-       
+
         switch (_state)
         {
         ////////////////////////////////////////////////////////////////
@@ -197,7 +194,8 @@ public:
                     auto samp = inBuff[i + N];
                     auto decd = samp*_chirpTable[i] * _fineTuneTable[ft];
                     ft -= _finefreqError * _fineSteps;
-                    if (ft < 0) ft += N * _fineSteps;else if (ft >= N * _fineSteps) ft -= N * _fineSteps;
+                    if (ft < 0) ft += N * _fineSteps;
+                    else if (ft >= int(N * _fineSteps)) ft -= N * _fineSteps;
                     rawBuff[i+N] = samp;
                     decBuff[i+N] = decd;
                     _detector.feed(i, decd);
@@ -265,10 +263,10 @@ public:
             if (value > N/2) error -= N;
             //std::cout << "error1 " << error << std::endl;
             _freqError = (_freqError + error)/2;
-            
-            this->callVoid("error", _freqError);
-            this->callVoid("power", 10*log10(power));
-            this->callVoid("snr", 10 * log(snr));
+
+            this->emitSignal("error", _freqError);
+            this->emitSignal("power", power);
+            this->emitSignal("snr", snr);
         } break;
 
         ////////////////////////////////////////////////////////////////

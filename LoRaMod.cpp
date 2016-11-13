@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include <Pothos/Framework.hpp>
+#include "ChirpGenerator.hpp"
 #include <iostream>
 #include <complex>
 #include <cmath>
@@ -46,10 +47,10 @@
  * |default 1
  *
  * |factory /lora/lora_mod(sf)
+ * |initializer setOvs(ovs)
  * |setter setSync(sync)
  * |setter setPadding(padding)
  * |setter setAmplitude(ampl)
- * |setter setOvs(ovs)
  **********************************************************************/
 class LoRaMod : public Pothos::Block
 {
@@ -105,37 +106,11 @@ public:
         _state = STATE_WAITINPUT;
     }
 
-	int genChirp(std::complex<float> *samps, int NN, float f0, bool down) {
-		const float fMin = -M_PI / _ovs;
-		const float fMax = M_PI / _ovs;
-		const float fStep = (2 * M_PI) / (N * _ovs * _ovs);
-		float f = fMin + f0;
-		int i;
-		if (down) {
-			for (i = 0; i < NN; i++) {
-				f += fStep;
-				if (f > fMax) f -= (fMax - fMin);
-				_phaseAccum -= f;
-				samps[i] = std::polar(_ampl, _phaseAccum);
-			}
-		}
-		else {
-			for (i = 0; i < NN; i++) {
-				f += fStep;
-				if (f > fMax) f -= (fMax - fMin);
-				_phaseAccum += f;
-				samps[i] = std::polar(_ampl, _phaseAccum);
-			}
-		}
-		_phaseAccum -= floor(_phaseAccum / (2 * M_PI)) * 2 * M_PI;
-		return i;
-	}
-
     void work(void)
     {
         auto outPort = this->output(0);
-		float freq = 0.0;
-		const size_t NN = N  * _ovs;
+        //float freq = 0.0;
+        const size_t NN = N  * _ovs;
         auto samps = outPort->buffer().as<std::complex<float> *>();
         size_t i = 0;
 
@@ -167,7 +142,7 @@ public:
         ////////////////////////////////////////////////////////////////
         {
             _counter--;
-			i = genChirp(samps, NN, 0.0, false);
+            i = genChirp(samps, N, _ovs, NN, 0.0f, false, _ampl, _phaseAccum);
             if (_counter == 0) _state = STATE_SYNCWORD0;
         } break;
 
@@ -177,7 +152,7 @@ public:
         {
             const int sw0 = (_sync >> 4)*8;
             const float freq = (2*M_PI*sw0)/NN;
-			i = genChirp(samps, NN, freq, false);
+            i = genChirp(samps, N, _ovs, NN, freq, false, _ampl, _phaseAccum);
             _state = STATE_SYNCWORD1;
             _id = "SYNC";
         } break;
@@ -188,7 +163,7 @@ public:
         {
             const int sw1 = (_sync & 0xf)*8;
             const float freq = (2*M_PI*sw1)/NN;
-			i = genChirp(samps, NN, freq, false);
+            i = genChirp(samps, N, _ovs, NN, freq, false, _ampl, _phaseAccum);
             _state = STATE_DOWNCHIRP0;
             _id = "";
         } break;
@@ -197,7 +172,7 @@ public:
         case STATE_DOWNCHIRP0:
         ////////////////////////////////////////////////////////////////
         {
-			i = genChirp(samps, NN, 0.0, true);
+            i = genChirp(samps, N, _ovs, NN, 0.0f, true, _ampl, _phaseAccum);
             _state = STATE_DOWNCHIRP1;
             _id = "DC";
         } break;
@@ -206,7 +181,7 @@ public:
         case STATE_DOWNCHIRP1:
         ////////////////////////////////////////////////////////////////
         {
-			i = genChirp(samps, NN, 0.0, true);
+            i = genChirp(samps, N, _ovs, NN, 0.0f, true, _ampl, _phaseAccum);
             _state = STATE_QUARTERCHIRP;
             _id = "";
         } break;
@@ -215,7 +190,7 @@ public:
         case STATE_QUARTERCHIRP:
         ////////////////////////////////////////////////////////////////
         {
-			i = genChirp(samps, NN / 4, 0.0, true);
+            i = genChirp(samps, N, _ovs, NN / 4, 0.0f, true, _ampl, _phaseAccum);
             _state = STATE_DATASYMBOLS;
             _counter = 0;
             _id = "QC";
@@ -227,7 +202,7 @@ public:
         {
             const int sym = _payload.as<const uint16_t *>()[_counter++];
             const float freq = (2*M_PI*sym)/NN;
-			i = genChirp(samps, NN, freq, false);
+            i = genChirp(samps, N, _ovs, NN, freq, false, _ampl, _phaseAccum);
         
             if (_counter >= _payload.elements())
             {

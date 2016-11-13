@@ -61,20 +61,13 @@
  * |option [Off] false
  * |default true
  *
- * |param legacy Enable/disable legacy mode.
- * |option [On] true
- * |option [Off] false
- * |default true
- *
  * |factory /lora/lora_encoder()
  * |setter setSpreadFactor(sf)
  * |setter setSymbolSize(ppm)
  * |setter setCodingRate(cr)
  * |setter enableExplicit(explicit)
  * |setter enableCrc(crc)
- * |setter enableLegacy(legacy)
  * |setter enableWhitening(whitening)
-
  **********************************************************************/
 class LoRaEncoder : public Pothos::Block
 {
@@ -83,7 +76,6 @@ public:
 		_sf(10),
 		_ppm(0),
 		_rdd(4),
-		_legacy(false),
 		_explicit(true),
 		_crc(true),
 		_whitening(true)
@@ -94,7 +86,6 @@ public:
 		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaEncoder, enableWhitening));
 		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaEncoder, enableExplicit));
 		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaEncoder, enableCrc));
-		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaEncoder, enableLegacy));
 		this->setupInput("0");
 		this->setupOutput("0");
 	}
@@ -129,78 +120,12 @@ public:
 		_whitening = whitening;
 	}
 
-	void enableLegacy(const bool legacy) {
-		_legacy = legacy;
-	}
-
 	void enableExplicit(const bool __explicit) {
 		_explicit = __explicit;
 	}
 
 	void enableCrc(const bool crc) {
 		_crc = crc;
-	}
-
-
-	void work_legacy(void)
-	{
-		auto inPort = this->input(0);
-		auto outPort = this->output(0);
-		if (not inPort->hasMessage()) return;
-
-		const size_t PPM = (_ppm == 0) ? _sf : _ppm;
-		if (PPM > _sf) throw Pothos::Exception("LoRaEncoder::work()", "failed check: PPM <= SF");
-
-		//extract the input bytes
-		auto msg = inPort->popMessage();
-		auto pkt = msg.extract<Pothos::Packet>();
-		std::vector<uint8_t> bytes(pkt.payload.length + 2);
-		std::memcpy(bytes.data() + 1, pkt.payload.as<const void *>(), pkt.payload.length);
-		const size_t numCodewords = roundUp(bytes.size() * 2, PPM);
-		const size_t numSymbols = (numCodewords / PPM)*(4 + _rdd);
-
-		//add header and CRC
-		bytes[0] = bytes.size();
-		bytes[bytes.size() - 1] = checksum8(bytes.data(), bytes.size() - 1);
-
-		//perform whitening
-		if (_whitening)
-			SX1232RadioComputeWhitening(bytes.data(), bytes.size());
-
-		//encode each byte as 2 codeword bytes
-		std::vector<uint8_t> codewords(numCodewords);
-		if (_rdd == 0) for (size_t i = 0; i < bytes.size(); i++)
-		{
-			codewords[i * 2 + 0] = bytes[i] >> 4;
-			codewords[i * 2 + 1] = bytes[i] & 0xf;
-		}
-		else if (_rdd == 3) for (size_t i = 0; i < bytes.size(); i++)
-		{
-			codewords[i * 2 + 0] = encodeHamming74(bytes[i] >> 4);
-			codewords[i * 2 + 1] = encodeHamming74(bytes[i] & 0xf);
-		}
-		else if (_rdd == 4) for (size_t i = 0; i < bytes.size(); i++)
-		{
-			codewords[i * 2 + 0] = encodeHamming84(bytes[i] >> 4);
-			codewords[i * 2 + 1] = encodeHamming84(bytes[i] & 0xf);
-		}
-
-		//interleave the codewords into symbols
-		std::vector<uint16_t> symbols(numSymbols);
-		diagonalInterleave(codewords.data(), numCodewords, symbols.data(), PPM, _rdd);
-
-		//gray decode, when SF > PPM, pad out LSBs
-		for (auto &sym : symbols)
-		{
-			sym = grayToBinary16(sym);
-			sym <<= (_sf - PPM);
-		}
-
-		//post the output symbols
-		Pothos::Packet out;
-		out.payload = Pothos::BufferChunk(typeid(uint16_t), symbols.size());
-		std::memcpy(out.payload.as<void *>(), symbols.data(), out.payload.length);
-		outPort->postMessage(out);
 	}
 
 	void encodeFec(std::vector<uint8_t> &codewords, const size_t RDD, size_t &cOfs, size_t &dOfs, const uint8_t *bytes, const size_t count) {
@@ -232,7 +157,7 @@ public:
 		}
 	}
 
-	void work_sx(void) {
+	void work(void) {
 		auto inPort = this->input(0);
 		auto outPort = this->output(0);
 		if (not inPort->hasMessage()) return;
@@ -306,18 +231,10 @@ public:
 		outPort->postMessage(out);
 	}
 
-	void work(void) {
-		if (_legacy)
-			work_legacy();
-		else
-			work_sx();
-	}
-
 private:
     size_t _sf;
     size_t _ppm;
 	size_t _rdd;
-	bool _legacy;
 	bool _explicit;
 	bool _crc;
     bool _whitening;
