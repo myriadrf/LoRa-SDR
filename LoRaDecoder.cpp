@@ -1,4 +1,5 @@
 // Copyright (c) 2016-2016 Lime Microsystems
+// Copyright (c) 2016-2016 Arne Hennig
 // SPDX-License-Identifier: BSL-1.0
 
 #include <Pothos/Framework.hpp>
