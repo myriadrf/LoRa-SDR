@@ -4,6 +4,7 @@
 #include <Pothos/Framework.hpp>
 #include <iostream>
 #include <complex>
+#include <cstring>
 #include <cmath>
 #include "LoRaDetector.hpp"
 
@@ -48,7 +49,7 @@
  * |param thresh[Threshold] The minimum required level in dB for the detector.
  * The threshold level is used to enter and exit the demodulation state machine.
  * |units dB
- * |default 10.0
+ * |default -30.0
  *
  * |param mtu[Symbol MTU] Produce MTU at most symbols after sync is found.
  * The demodulator does not inspect the payload and will produce at most
@@ -66,9 +67,10 @@ class LoRaDemod : public Pothos::Block
 public:
     LoRaDemod(const size_t sf):
         N(1 << sf),
+        _fineSteps(128),
         _detector(N),
         _sync(0x12),
-        _thresh(2),
+        _thresh(-30.0),
         _mtu(256)
     {
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaDemod, setSync));
@@ -78,8 +80,11 @@ public:
         this->setupOutput(0);
         this->setupOutput("raw", typeid(std::complex<float>));
         this->setupOutput("dec", typeid(std::complex<float>));
+        this->setupOutput("fft", typeid(std::complex<float>));
+        
         this->registerSignal("error");
         this->registerSignal("power");
+        this->registerSignal("snr");
 
         //use at most two input symbols available
         this->input(0)->setReserve(N*2);
@@ -87,7 +92,8 @@ public:
         //store port pointers to avoid lookup by name
         _rawPort = this->output("raw");
         _decPort = this->output("dec");
-
+        _fftPort = this->output("fft");
+        
         //generate chirp table
         float phase = -M_PI;
         double phaseAccum = 0.0;
@@ -99,6 +105,15 @@ public:
             _downChirpTable.push_back(std::complex<float>(entry));
             phase += (2*M_PI)/N;
         }
+        phaseAccum = 0.0;
+        phase = 2.0 * M_PI / (N * _fineSteps);
+        for (size_t i = 0; i < N * _fineSteps; i++){
+            phaseAccum += phase;
+            auto entry = std::polar(1.0, phaseAccum);
+            _fineTuneTable.push_back(std::complex<float>(entry));
+        }
+        
+        _fineTuneIndex = 0;
     }
 
     static Block *make(const size_t sf)
@@ -113,7 +128,7 @@ public:
 
     void setThreshold(const double thresh_dB)
     {
-        _thresh = float(std::pow(10.0, thresh_dB/10));
+        _thresh = thresh_dB;
     }
 
     void setMTU(const size_t mtu)
@@ -131,34 +146,32 @@ public:
     {
         auto inPort = this->input(0);
         if (inPort->elements() < N*2) return;
-        if (_rawPort->elements() < N*2)
-        {
-            _rawPort->popBuffer(_rawPort->elements());
-            return;
-        }
-        if (_decPort->elements() < N*2)
-        {
-            _decPort->popBuffer(_decPort->elements());
-            return;
-        }
-
+        
         size_t total = 0;
         auto inBuff = inPort->buffer().as<const std::complex<float> *>();
         auto rawBuff = _rawPort->buffer().as<std::complex<float> *>();
         auto decBuff = _decPort->buffer().as<std::complex<float> *>();
+        auto fftBuff = _fftPort->buffer().as<std::complex<float> *>();
 
         //process the available symbol
-        for (size_t i = 0; i < N; i++)
-        {
+        for (size_t i = 0; i < N; i++){
             auto samp = inBuff[i];
-            auto decd = samp*_chirpTable[i];
+            auto decd = samp*_chirpTable[i] * _fineTuneTable[_fineTuneIndex];
+            _fineTuneIndex -= _finefreqError * _fineSteps;
+            if (_fineTuneIndex < 0) _fineTuneIndex += N * _fineSteps;
+            else if (_fineTuneIndex >= int(N * _fineSteps)) _fineTuneIndex -= N * _fineSteps;
             rawBuff[i] = samp;
             decBuff[i] = decd;
             _detector.feed(i, decd);
         }
         float power = 0;
-        auto value = _detector.detect(power);
-        const bool squelched = (power < _thresh);
+        float powerAvg = 0;
+        float snr = 0;
+        float fIndex = 0;
+        
+        auto value = _detector.detect(power,powerAvg,fIndex,fftBuff);
+        snr = power - powerAvg;
+        const bool squelched = (snr < _thresh);
 
         switch (_state)
         {
@@ -175,15 +188,19 @@ public:
             //otherwise assume its the frame sync and adjust for frequency error
             if (syncd and match0)
             {
+                int ft = _fineTuneIndex;
                 for (size_t i = 0; i < N; i++)
                 {
                     auto samp = inBuff[i + N];
-                    auto decd = samp*_chirpTable[i];
+                    auto decd = samp*_chirpTable[i] * _fineTuneTable[ft];
+                    ft -= _finefreqError * _fineSteps;
+                    if (ft < 0) ft += N * _fineSteps;
+                    else if (ft >= int(N * _fineSteps)) ft -= N * _fineSteps;
                     rawBuff[i+N] = samp;
                     decBuff[i+N] = decd;
                     _detector.feed(i, decd);
                 }
-                auto value1 = _detector.detect(power);
+                auto value1 = _detector.detect(power,powerAvg,fIndex);
                 //format as observed from inspecting RN2483
                 match1 = (value1+4)/8 == unsigned(_sync & 0xf);
             }
@@ -200,13 +217,20 @@ public:
             else if (not squelched)
             {
                 total = N - value;
-                _id = "";
+                _finefreqError += fIndex;
+				std::stringstream stream;
+				stream.precision(4);
+				stream << std::fixed << "P " << fIndex;
+				_id = stream.str();
+ //               _id = "P " + std::to_string(fIndex);
             }
 
             //just noise
             else
             {
                 total = N;
+                _finefreqError = 0;
+                _fineTuneIndex = 0;
                 _id = "";
             }
 
@@ -239,8 +263,10 @@ public:
             if (value > N/2) error -= N;
             //std::cout << "error1 " << error << std::endl;
             _freqError = (_freqError + error)/2;
-            this->callVoid("error", _freqError);
-            this->callVoid("power", 10*log10(power));
+
+            this->emitSignal("error", _freqError);
+            this->emitSignal("power", power);
+            this->emitSignal("snr", snr);
         } break;
 
         ////////////////////////////////////////////////////////////////
@@ -248,7 +274,10 @@ public:
         ////////////////////////////////////////////////////////////////
         {
             _state = STATE_DATASYMBOLS;
-            total = N/4;
+            
+            total = N/4 + (_freqError / 2);
+            _finefreqError += (_freqError / 2);
+            
             _symCount = 0;
             _id = "QC";
         } break;
@@ -267,9 +296,17 @@ public:
                 pkt.payload = _outSymbols;
                 pkt.payload.length = _symCount*sizeof(int16_t);
                 this->output(0)->postMessage(pkt);
+                _finefreqError = 0;
                 _state = STATE_FRAMESYNC;
             }
-            _id = "S" + std::to_string(_symCount);
+			std::stringstream stream;
+			stream.precision(4);
+			stream << std::fixed << "S" << _symCount << " " << fIndex;
+			_id = stream.str();
+            //_id = "S" + std::to_string(_symCount) + " " + std::to_string(fIndex);
+            
+           // _finefreqError += fIndex;
+            
         } break;
 
         }
@@ -278,10 +315,14 @@ public:
         {
             _rawPort->postLabel(Pothos::Label(_id, Pothos::Object(), 0));
             _decPort->postLabel(Pothos::Label(_id, Pothos::Object(), 0));
+            _fftPort->postLabel(Pothos::Label(_id, Pothos::Object(), 0));
         }
         inPort->consume(total);
         _rawPort->produce(total);
         _decPort->produce(total);
+        
+        _fftPort->produce(N);
+        
         _prevValue = value;
     }
 
@@ -290,8 +331,14 @@ public:
     {
         if (name == "raw" or name == "dec")
         {
+            this->output(name)->setReserve(N * 2);
             Pothos::BufferManagerArgs args;
             args.bufferSize = N*2*sizeof(std::complex<float>);
+            return Pothos::BufferManager::make("generic", args);
+        }else if (name == "fft"){
+            this->output(name)->setReserve(N);
+            Pothos::BufferManagerArgs args;
+            args.bufferSize = N*sizeof(std::complex<float>);
             return Pothos::BufferManager::make("generic", args);
         }
         return Pothos::Block::getOutputBufferManager(name, domain);
@@ -300,11 +347,12 @@ public:
     //! Custom input buffer manager with slabs large enough for fft input
     Pothos::BufferManager::Sptr getInputBufferManager(const std::string &name, const std::string &domain)
     {
-        if (name == "raw" or name == "dec")
+        if (name == "0")
         {
             Pothos::BufferManagerArgs args;
-            args.bufferSize = N*2*sizeof(std::complex<float>);
-            return Pothos::BufferManager::make("circular", args);
+            args.bufferSize = std::max(args.bufferSize,
+                              N*2*sizeof(std::complex<float>));
+            return Pothos::BufferManager::make("generic", args);
         }
         return Pothos::Block::getInputBufferManager(name, domain);
     }
@@ -312,15 +360,18 @@ public:
 private:
     //configuration
     const size_t N;
+    const size_t _fineSteps;
     LoRaDetector<float> _detector;
     std::complex<float> *_chirpTable;
     std::vector<std::complex<float>> _upChirpTable;
     std::vector<std::complex<float>> _downChirpTable;
+    std::vector<std::complex<float>> _fineTuneTable;
     unsigned char _sync;
     float _thresh;
     size_t _mtu;
     Pothos::OutputPort *_rawPort;
     Pothos::OutputPort *_decPort;
+    Pothos::OutputPort *_fftPort;
 
     //state
     enum LoraDemodState
@@ -337,6 +388,8 @@ private:
     std::string _id;
     short _prevValue;
     int _freqError;
+    int _fineTuneIndex;
+    float _finefreqError;
 };
 
 static Pothos::BlockRegistry registerLoRaDemod(

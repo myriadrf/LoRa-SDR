@@ -18,17 +18,17 @@ POTHOS_TEST_BLOCK("/lora/tests", test_hamming)
     for (size_t i = 0; i < 16; i++)
     {
         unsigned char byte = i & 0xff;
-        unsigned char encoded = encodeHamming74(byte);
+        unsigned char encoded = encodeHamming74sx(byte);
 
         //check no bit errors
-        decoded = decodeHamming74(encoded);
+        decoded = decodeHamming74sx(encoded);
         POTHOS_TEST_EQUAL(byte, decoded);
 
         for (int bit0 = 0; bit0 < 8; bit0++)
         {
             //check 1 bit error
             unsigned char encoded1err = encoded ^ (1 << bit0);
-            decoded = decodeHamming74(encoded1err);
+            decoded = decodeHamming74sx(encoded1err);
             POTHOS_TEST_EQUAL(byte, decoded);
         }
     }
@@ -37,11 +37,11 @@ POTHOS_TEST_BLOCK("/lora/tests", test_hamming)
     for (size_t i = 0; i < 16; i++)
     {
         unsigned char byte = i & 0xff;
-        unsigned char encoded = encodeHamming84(byte);
+        unsigned char encoded = encodeHamming84sx(byte);
 
         //check no bit errors
         error = false;
-        decoded = decodeHamming84(encoded, error);
+        decoded = decodeHamming84sx(encoded, error);
         POTHOS_TEST_TRUE(not error);
         POTHOS_TEST_EQUAL(byte, decoded);
 
@@ -50,7 +50,7 @@ POTHOS_TEST_BLOCK("/lora/tests", test_hamming)
             //check 1 bit error
             error = false;
             unsigned char encoded1err = encoded ^ (1 << bit0);
-            decoded = decodeHamming84(encoded1err, error);
+            decoded = decodeHamming84sx(encoded1err, error);
             POTHOS_TEST_TRUE(not error);
             POTHOS_TEST_EQUAL(byte, decoded);
 
@@ -61,7 +61,7 @@ POTHOS_TEST_BLOCK("/lora/tests", test_hamming)
                 //check 2 bit errors (cant correct, but can detect
                 error = false;
                 unsigned char encoded2err = encoded1err ^ (1 << bit1);
-                decoded = decodeHamming84(encoded2err, error);
+                decoded = decodeHamming84sx(encoded2err, error);
                 POTHOS_TEST_TRUE(error);
             }
         }
@@ -81,10 +81,10 @@ POTHOS_TEST_BLOCK("/lora/tests", test_interleaver)
             for (auto &x : inputCws) x = std::rand() & mask;
 
             std::vector<uint16_t> symbols(((RDD+4)*inputCws.size())/PPM);
-            diagonalInterleave(inputCws.data(), inputCws.size(), symbols.data(), PPM, RDD);
+            diagonalInterleaveSx(inputCws.data(), inputCws.size(), symbols.data(), PPM, RDD);
 
             std::vector<uint8_t> outputCws(inputCws.size());
-            diagonalDeterleave(symbols.data(), symbols.size(), outputCws.data(), PPM, RDD);
+            diagonalDeterleaveSx(symbols.data(), symbols.size(), outputCws.data(), PPM, RDD);
 
             POTHOS_TEST_EQUALV(inputCws, outputCws);
         }
@@ -103,6 +103,8 @@ POTHOS_TEST_BLOCK("/lora/tests", test_encoder_to_decoder)
 
     std::vector<std::string> testCodingRates;
     testCodingRates.push_back("4/4");
+    testCodingRates.push_back("4/5");
+    testCodingRates.push_back("4/6");
     testCodingRates.push_back("4/7");
     testCodingRates.push_back("4/8");
 
@@ -157,6 +159,10 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
     auto collector = registry.callProxy("/blocks/collector_sink", "uint8");
 
     std::vector<std::string> testCodingRates;
+    //these first few dont have error correction
+    //testCodingRates.push_back("4/4");
+    //testCodingRates.push_back("4/5");
+    //testCodingRates.push_back("4/6");
     testCodingRates.push_back("4/7");
     testCodingRates.push_back("4/8");
 
@@ -196,7 +202,7 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
             topology.connect(demod, 0, decoder, 0);
             topology.connect(decoder, 0, collector, 0);
             topology.commit();
-            POTHOS_TEST_TRUE(topology.waitInactive());
+            POTHOS_TEST_TRUE(topology.waitInactive(0.1, 0));
             //std::cout << topology.queryJSONStats() << std::endl;
         }
 
