@@ -268,6 +268,7 @@ public:
 		}
 
 		bool error = false;
+		bool bad = false;
 		std::vector<uint8_t> bytes((codewords.size()+1) / 2);
 		size_t dOfs = 0;
 		size_t cOfs = 0;
@@ -277,13 +278,13 @@ public:
         bool checkCrc = _crcc;
 		
 		if (_explicit) {
-			bytes[0] = decodeHamming84sx(codewords[1], error) & 0xf;
-			bytes[0] |= decodeHamming84sx(codewords[0], error) << 4;	// length
+			bytes[0] = decodeHamming84sx(codewords[1], error, bad) & 0xf;
+			bytes[0] |= decodeHamming84sx(codewords[0], error, bad) << 4;	// length
 
-			bytes[1] = decodeHamming84sx(codewords[2], error) & 0xf;	// coding rate and crc enable
+			bytes[1] = decodeHamming84sx(codewords[2], error, bad) & 0xf;	// coding rate and crc enable
 
-			bytes[2] = decodeHamming84sx(codewords[4], error) & 0xf;
-			bytes[2] |= decodeHamming84sx(codewords[3], error) << 4;	// checksum
+			bytes[2] = decodeHamming84sx(codewords[4], error, bad) & 0xf;
+			bytes[2] |= decodeHamming84sx(codewords[3], error, bad) << 4;	// checksum
 			
 			bytes[2] ^= headerChecksum(bytes.data());
 
@@ -311,9 +312,9 @@ public:
 		
 		for (; cOfs < PPM; cOfs++, dOfs++) {
 			if (dOfs & 1)
-				bytes[dOfs >> 1] |= decodeHamming84sx(codewords[cOfs], error) << 4;
+				bytes[dOfs >> 1] |= decodeHamming84sx(codewords[cOfs], error, bad) << 4;
 			else
-				bytes[dOfs >> 1] = decodeHamming84sx(codewords[cOfs], error) & 0xf;
+				bytes[dOfs >> 1] = decodeHamming84sx(codewords[cOfs], error, bad) & 0xf;
 		}
 
 		if (dOfs & 1) {
@@ -327,10 +328,10 @@ public:
 				bytes[dOfs >> 1] |= checkParity64(codewords[cOfs++], error) << 4;
 			}
 			else if (_rdd == 3){
-				bytes[dOfs >> 1] |= decodeHamming74sx(codewords[cOfs++]) << 4;
+				bytes[dOfs >> 1] |= decodeHamming74sx(codewords[cOfs++], error) << 4;
 			}
 			else if (_rdd == 4){
-				bytes[dOfs >> 1] |= decodeHamming84sx(codewords[cOfs++], error) << 4;
+				bytes[dOfs >> 1] |= decodeHamming84sx(codewords[cOfs++], error, bad) << 4;
 			}
 			dOfs++;
 		}
@@ -350,11 +351,11 @@ public:
 			bytes[i] = checkParity64(codewords[cOfs++], error);
 			bytes[i] |= checkParity64(codewords[cOfs++],error) << 4;
 		}else if (_rdd == 3) for (size_t i = dOfs; i < dataLength; i++){
-			bytes[i] = decodeHamming74sx(codewords[cOfs++]) & 0xf;
-			bytes[i] |= decodeHamming74sx(codewords[cOfs++]) << 4;
+			bytes[i] = decodeHamming74sx(codewords[cOfs++], error) & 0xf;
+			bytes[i] |= decodeHamming74sx(codewords[cOfs++], error) << 4;
 		}else if (_rdd == 4) for (size_t i = dOfs; i < dataLength; i++){
-			bytes[i] = decodeHamming84sx(codewords[cOfs++], error) & 0xf;
-			bytes[i] |= decodeHamming84sx(codewords[cOfs++], error) << 4;
+			bytes[i] = decodeHamming84sx(codewords[cOfs++], error, bad) & 0xf;
+			bytes[i] |= decodeHamming84sx(codewords[cOfs++], error, bad) << 4;
 		}
 		
 		if (error && _errorCheck) return this->drop();

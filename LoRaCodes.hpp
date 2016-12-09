@@ -216,9 +216,10 @@ static inline unsigned char encodeHamming84sx(const unsigned char x)
 /***********************************************************************
  * Decode 8 bits into a 4 bit word with single bit correction.
  * Non standard version used in sx1272.
- * Set error true when the result is known to be in error
+ * Set error to true when a parity error was detected
+ * Set bad to true when the result could not be corrected
  **********************************************************************/
-static inline unsigned char decodeHamming84sx(const unsigned char b, bool &error)
+static inline unsigned char decodeHamming84sx(const unsigned char b, bool &error, bool &bad)
 {
     auto b0 = (b >> 0) & 0x1;
     auto b1 = (b >> 1) & 0x1;
@@ -235,6 +236,7 @@ static inline unsigned char decodeHamming84sx(const unsigned char b, bool &error
     auto p3 = (b0 ^ b2 ^ b3 ^ b7);
     
     auto parity = (p0 << 0) | (p1 << 1) | (p2 << 2) | (p3 << 3);
+    if (parity != 0) error = true;
     switch (parity & 0xf)
     {
         case 0xD: return (b ^ 1) & 0xf;
@@ -246,7 +248,7 @@ static inline unsigned char decodeHamming84sx(const unsigned char b, bool &error
         case 0x2:
         case 0x4:
         case 0x8: return b & 0xf;
-        default: error = true; return b & 0xf;
+        default: bad = true; return b & 0xf;
     }
 }
 
@@ -271,8 +273,9 @@ static inline unsigned char encodeHamming74sx(const unsigned char x)
 /***********************************************************************
  * Decode 7 bits into a 4 bit word with single bit correction.
  * Non standard version used in sx1272.
+ * Set error to true when a parity error was detected
  **********************************************************************/
-static inline unsigned char decodeHamming74sx(const unsigned char b)
+static inline unsigned char decodeHamming74sx(const unsigned char b, bool &error)
 {
     auto b0 = (b >> 0) & 0x1;
     auto b1 = (b >> 1) & 0x1;
@@ -287,6 +290,7 @@ static inline unsigned char decodeHamming74sx(const unsigned char b)
     auto p2 = (b0 ^ b1 ^ b3 ^ b6);
     
     auto parity = (p0 << 0) | (p1 << 1) | (p2 << 2);
+    if (parity != 0) error = true;
     switch (parity)
     {
         case 0x5: return (b ^ 1) & 0xf;

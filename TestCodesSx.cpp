@@ -8,6 +8,7 @@
 POTHOS_TEST_BLOCK("/lora/tests", test_hamming84_sx)
 {
     bool error;
+    bool bad;
     unsigned char decoded;
 
     //test hamming 84 with bit errors
@@ -18,17 +19,21 @@ POTHOS_TEST_BLOCK("/lora/tests", test_hamming84_sx)
 
         //check no bit errors
         error = false;
-        decoded = decodeHamming84sx(encoded, error);
+        bad = false;
+        decoded = decodeHamming84sx(encoded, error, bad);
         POTHOS_TEST_TRUE(not error);
+        POTHOS_TEST_TRUE(not bad);
         POTHOS_TEST_EQUAL(byte, decoded);
 
         for (int bit0 = 0; bit0 < 8; bit0++)
         {
             //check 1 bit error
             error = false;
+            bad = false;
             unsigned char encoded1err = encoded ^ (1 << bit0);
-            decoded = decodeHamming84sx(encoded1err, error);
-            POTHOS_TEST_TRUE(not error);
+            decoded = decodeHamming84sx(encoded1err, error, bad);
+            POTHOS_TEST_TRUE(error);
+            POTHOS_TEST_TRUE(not bad);
             POTHOS_TEST_EQUAL(byte, decoded);
 
             for (int bit1 = 0; bit1 < 8; bit1++)
@@ -37,9 +42,11 @@ POTHOS_TEST_BLOCK("/lora/tests", test_hamming84_sx)
 
                 //check 2 bit errors (cant correct, but can detect
                 error = false;
+                bad = false;
                 unsigned char encoded2err = encoded1err ^ (1 << bit1);
-                decoded = decodeHamming84sx(encoded2err, error);
+                decoded = decodeHamming84sx(encoded2err, error, bad);
                 POTHOS_TEST_TRUE(error);
+                POTHOS_TEST_TRUE(bad);
             }
         }
     }
@@ -47,7 +54,7 @@ POTHOS_TEST_BLOCK("/lora/tests", test_hamming84_sx)
 
 POTHOS_TEST_BLOCK("/lora/tests", test_hamming74_sx)
 {
-    //bool error;
+    bool error;
     unsigned char decoded;
 
     //test hamming 74 with bit errors
@@ -57,14 +64,18 @@ POTHOS_TEST_BLOCK("/lora/tests", test_hamming74_sx)
         unsigned char encoded = encodeHamming74sx(byte);
 
         //check no bit errors
-        decoded = decodeHamming74sx(encoded);
+        error = false;
+        decoded = decodeHamming74sx(encoded, error);
+        POTHOS_TEST_TRUE(not error);
         POTHOS_TEST_EQUAL(byte, decoded);
 
-        for (int bit0 = 0; bit0 < 8; bit0++)
+        for (int bit0 = 0; bit0 < 7; bit0++)
         {
             //check 1 bit error
+            error = false;
             unsigned char encoded1err = encoded ^ (1 << bit0);
-            decoded = decodeHamming74sx(encoded1err);
+            decoded = decodeHamming74sx(encoded1err, error);
+            POTHOS_TEST_TRUE(error);
             POTHOS_TEST_EQUAL(byte, decoded);
         }
     }
