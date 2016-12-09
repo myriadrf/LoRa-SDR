@@ -212,6 +212,8 @@ public:
 		std::vector<uint16_t> symbols(numSymbols);
 		std::memcpy(symbols.data(), pkt.payload.as<const void *>(), pkt.payload.length);
 
+        int rdd = _rdd; //make a copy to be changed in header decode
+
 		//gray encode, when SF > PPM, depad the LSBs with rounding
 		for (auto &sym : symbols){
 			sym += (1 << (_sf - PPM)) / 2; //increment by 1/2
@@ -223,7 +225,7 @@ public:
 		if (_interleaving) {
 			size_t sOfs = 0;
 			size_t cOfs = 0;
-			if (_rdd != HEADER_RDD) {
+			if (rdd != HEADER_RDD) {
 				diagonalDeterleaveSx(symbols.data(), N_HEADER_SYMBOLS, codewords.data(), PPM, HEADER_RDD);
 				if (_explicit) {
 					Sx1272ComputeWhiteningLfsr(codewords.data() + N_HEADER_CODEWORDS, PPM - N_HEADER_CODEWORDS, 0, HEADER_RDD);
@@ -234,21 +236,21 @@ public:
 				cOfs += PPM;
 				sOfs += N_HEADER_SYMBOLS;
 				if (numSymbols - sOfs > 0) {
-					diagonalDeterleaveSx(symbols.data() + sOfs, numSymbols-sOfs, codewords.data() + cOfs, PPM, _rdd);
+					diagonalDeterleaveSx(symbols.data() + sOfs, numSymbols-sOfs, codewords.data() + cOfs, PPM, rdd);
 					if (_explicit) {
-						Sx1272ComputeWhiteningLfsr(codewords.data() + cOfs, numCodewords - cOfs, PPM-N_HEADER_CODEWORDS, _rdd);
+						Sx1272ComputeWhiteningLfsr(codewords.data() + cOfs, numCodewords - cOfs, PPM-N_HEADER_CODEWORDS, rdd);
 					}
 					else {
-						Sx1272ComputeWhiteningLfsr(codewords.data() + cOfs, numCodewords - cOfs, PPM, _rdd);
+						Sx1272ComputeWhiteningLfsr(codewords.data() + cOfs, numCodewords - cOfs, PPM, rdd);
 					}
 				}
 			}else{
-				diagonalDeterleaveSx(symbols.data(), numSymbols, codewords.data(), PPM, _rdd);
+				diagonalDeterleaveSx(symbols.data(), numSymbols, codewords.data(), PPM, rdd);
 				if (_explicit) {
-					Sx1272ComputeWhiteningLfsr(codewords.data()+N_HEADER_CODEWORDS, numCodewords-N_HEADER_CODEWORDS, 0, _rdd);
+					Sx1272ComputeWhiteningLfsr(codewords.data()+N_HEADER_CODEWORDS, numCodewords-N_HEADER_CODEWORDS, 0, rdd);
 				}
 				else {
-					Sx1272ComputeWhiteningLfsr(codewords.data(), numCodewords, 0, _rdd);
+					Sx1272ComputeWhiteningLfsr(codewords.data(), numCodewords, 0, rdd);
 				}
 			}
 		/*
@@ -291,8 +293,8 @@ public:
 			if (error && _errorCheck) return this->drop();
             
             if (0 == (bytes[1] & 1)) checkCrc = false;	// disable crc check if not present in the packet
-            _rdd = (bytes[1] >> 1) & 0x7;				// header contains error correction info
-            if (_rdd > 4) return this->drop();
+            rdd = (bytes[1] >> 1) & 0x7;				// header contains error correction info
+            if (rdd > 4) return this->drop();
             
             packetLength = bytes[0];
             dataLength = packetLength + ((bytes[1] & 1)?5:3);  // include  header and crc
@@ -318,19 +320,19 @@ public:
 		}
 
 		if (dOfs & 1) {
-			if (_rdd == 0){
+			if (rdd == 0){
 				bytes[dOfs>>1] |= codewords[cOfs++] << 4;
 			}
-			else if (_rdd == 1){
+			else if (rdd == 1){
 				bytes[dOfs >> 1] |= checkParity54(codewords[cOfs++], error) << 4;
 			}
-			else if (_rdd == 2) {
+			else if (rdd == 2) {
 				bytes[dOfs >> 1] |= checkParity64(codewords[cOfs++], error) << 4;
 			}
-			else if (_rdd == 3){
+			else if (rdd == 3){
 				bytes[dOfs >> 1] |= decodeHamming74sx(codewords[cOfs++], error) << 4;
 			}
-			else if (_rdd == 4){
+			else if (rdd == 4){
 				bytes[dOfs >> 1] |= decodeHamming84sx(codewords[cOfs++], error, bad) << 4;
 			}
 			dOfs++;
@@ -341,19 +343,19 @@ public:
 
 
 		//decode each codeword as 2 bytes with correction
-		if (_rdd == 0) for (size_t i = dOfs; i < dataLength; i++) {
+		if (rdd == 0) for (size_t i = dOfs; i < dataLength; i++) {
 			bytes[i] = codewords[cOfs++] & 0xf;
 			bytes[i] |= codewords[cOfs++] << 4;
-		}else if (_rdd == 1) for (size_t i = dOfs; i < dataLength; i++) {
+		}else if (rdd == 1) for (size_t i = dOfs; i < dataLength; i++) {
 			bytes[i] = checkParity54(codewords[cOfs++],error);
 			bytes[i] |= checkParity54(codewords[cOfs++], error) << 4;
-		}else if (_rdd == 2) for (size_t i = dOfs; i < dataLength; i++) {
+		}else if (rdd == 2) for (size_t i = dOfs; i < dataLength; i++) {
 			bytes[i] = checkParity64(codewords[cOfs++], error);
 			bytes[i] |= checkParity64(codewords[cOfs++],error) << 4;
-		}else if (_rdd == 3) for (size_t i = dOfs; i < dataLength; i++){
+		}else if (rdd == 3) for (size_t i = dOfs; i < dataLength; i++){
 			bytes[i] = decodeHamming74sx(codewords[cOfs++], error) & 0xf;
 			bytes[i] |= decodeHamming74sx(codewords[cOfs++], error) << 4;
-		}else if (_rdd == 4) for (size_t i = dOfs; i < dataLength; i++){
+		}else if (rdd == 4) for (size_t i = dOfs; i < dataLength; i++){
 			bytes[i] = decodeHamming84sx(codewords[cOfs++], error, bad) & 0xf;
 			bytes[i] |= decodeHamming84sx(codewords[cOfs++], error, bad) << 4;
 		}
