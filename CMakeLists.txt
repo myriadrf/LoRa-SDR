@@ -26,7 +26,7 @@ POTHOS_MODULE_UTIL(
         LoRaMod.cpp
         LoRaEncoder.cpp
         LoRaDecoder.cpp
-        LoRaTest.cpp
+        TestLoopback.cpp
         TestGen.cpp
         BlockGen.cpp
         TestCodesSx.cpp
