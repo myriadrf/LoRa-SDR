@@ -5,6 +5,8 @@
 #define N_HEADER_SYMBOLS    (HEADER_RDD + 4)
 #define N_HEADER_CODEWORDS  5
 
+#include <cstdint>
+#include <cstddef>
 
 /***********************************************************************
  * Round functions
@@ -392,3 +394,14 @@ static inline void diagonalDeterleaveSx2(const uint16_t *symbols, const size_t n
         }
     }
 }
+
+/***********************************************************************
+ * least error decoder
+ * The symbols have +/-1 error due to chirp gray encode
+ * Calculate error for each interleaved section hamming/parity decode
+ * for different symbol adjustments until the minimum error is found.
+ **********************************************************************/
+void leastErrorDecoder(
+        uint16_t *symbols, const size_t numSymbols,
+        const size_t cwOfs, const size_t bitOfs,
+        const size_t ppm, const size_t rrd);

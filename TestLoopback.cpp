@@ -22,13 +22,14 @@ POTHOS_TEST_BLOCK("/lora/tests", test_encoder_to_decoder)
     auto collector = registry.call("/blocks/collector_sink", "uint8");
 
     std::vector<std::string> testCodingRates;
-    testCodingRates.push_back("4/4");
+    //testCodingRates.push_back("4/4");
     testCodingRates.push_back("4/5");
-    testCodingRates.push_back("4/6");
-    testCodingRates.push_back("4/7");
-    testCodingRates.push_back("4/8");
+    //testCodingRates.push_back("4/6");
+    //testCodingRates.push_back("4/7");
+    //testCodingRates.push_back("4/8");
 
-    for (size_t SF = 7; SF <= 12; SF++)
+    //for (size_t SF = 7; SF <= 12; SF++)
+    for (size_t SF = 8; SF <= 8; SF++)
     {
         std::cout << "Testing SF " << SF << std::endl;
         for (const auto &CR : testCodingRates)

@@ -220,12 +220,14 @@ public:
             sym >>= (_sf - PPM); //down shift to PPM bits
             sym = binaryToGray16(sym);
         }
+
         //deinterleave / dewhiten the symbols into codewords
         std::vector<uint8_t> codewords(numCodewords);
         if (_interleaving) {
             size_t sOfs = 0;
             size_t cOfs = 0;
             if (rdd != HEADER_RDD) {
+                leastErrorDecoder(symbols.data(), N_HEADER_SYMBOLS, _explicit?N_HEADER_CODEWORDS:0, 0, PPM, HEADER_RDD);
                 diagonalDeterleaveSx(symbols.data(), N_HEADER_SYMBOLS, codewords.data(), PPM, HEADER_RDD);
                 if (_explicit) {
                     Sx1272ComputeWhiteningLfsr(codewords.data() + N_HEADER_CODEWORDS, PPM - N_HEADER_CODEWORDS, 0, HEADER_RDD);
@@ -236,6 +238,7 @@ public:
                 cOfs += PPM;
                 sOfs += N_HEADER_SYMBOLS;
                 if (numSymbols - sOfs > 0) {
+                    leastErrorDecoder(symbols.data() + sOfs, numSymbols-sOfs, _explicit?cOfs:0, PPM-(_explicit?N_HEADER_CODEWORDS:0), PPM, rdd);
                     diagonalDeterleaveSx(symbols.data() + sOfs, numSymbols-sOfs, codewords.data() + cOfs, PPM, rdd);
                     if (_explicit) {
                         Sx1272ComputeWhiteningLfsr(codewords.data() + cOfs, numCodewords - cOfs, PPM-N_HEADER_CODEWORDS, rdd);
@@ -245,6 +248,7 @@ public:
                     }
                 }
             }else{
+                leastErrorDecoder(symbols.data(), numSymbols, _explicit?N_HEADER_CODEWORDS:0, 0, PPM, rdd);
                 diagonalDeterleaveSx(symbols.data(), numSymbols, codewords.data(), PPM, rdd);
                 if (_explicit) {
                     Sx1272ComputeWhiteningLfsr(codewords.data()+N_HEADER_CODEWORDS, numCodewords-N_HEADER_CODEWORDS, 0, rdd);

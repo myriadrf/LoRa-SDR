@@ -42,6 +42,7 @@ POTHOS_MODULE_UTIL(
         BlockGen.cpp
         TestCodesSx.cpp
         TestDetector.cpp
+        LeastErrorDecoder.cpp
     DESTINATION lora
     ENABLE_DOCS
 )
