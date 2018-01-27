@@ -403,5 +403,4 @@ static inline void diagonalDeterleaveSx2(const uint16_t *symbols, const size_t n
  **********************************************************************/
 void leastErrorDecoder(
         uint16_t *symbols, const size_t numSymbols,
-        const size_t cwOfs, const size_t bitOfs,
         const size_t ppm, const size_t rrd);

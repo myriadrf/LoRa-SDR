@@ -4,6 +4,7 @@
 
 #include <Pothos/Framework.hpp>
 #include <iostream>
+#include <iomanip>
 #include <cstring>
 #include "LoRaCodes.hpp"
 
@@ -214,8 +215,18 @@ public:
 
         int rdd = _rdd; //make a copy to be changed in header decode
 
+        //least error decoder when supported
+        if (_explicit && _sf == PPM && rdd > 0)
+        {
+            if (rdd != HEADER_RDD)
+            {
+                leastErrorDecoder(symbols.data(), N_HEADER_SYMBOLS, PPM, HEADER_RDD);
+                leastErrorDecoder(symbols.data()+N_HEADER_SYMBOLS, numSymbols-N_HEADER_SYMBOLS, PPM, rdd);
+            }
+            else leastErrorDecoder(symbols.data(), numSymbols, PPM, rdd);
+        }
         //gray encode, when SF > PPM, depad the LSBs with rounding
-        for (auto &sym : symbols){
+        else for (auto &sym : symbols){
             sym += (1 << (_sf - PPM)) / 2; //increment by 1/2
             sym >>= (_sf - PPM); //down shift to PPM bits
             sym = binaryToGray16(sym);
@@ -227,7 +238,6 @@ public:
             size_t sOfs = 0;
             size_t cOfs = 0;
             if (rdd != HEADER_RDD) {
-                leastErrorDecoder(symbols.data(), N_HEADER_SYMBOLS, _explicit?N_HEADER_CODEWORDS:0, 0, PPM, HEADER_RDD);
                 diagonalDeterleaveSx(symbols.data(), N_HEADER_SYMBOLS, codewords.data(), PPM, HEADER_RDD);
                 if (_explicit) {
                     Sx1272ComputeWhiteningLfsr(codewords.data() + N_HEADER_CODEWORDS, PPM - N_HEADER_CODEWORDS, 0, HEADER_RDD);
@@ -238,7 +248,6 @@ public:
                 cOfs += PPM;
                 sOfs += N_HEADER_SYMBOLS;
                 if (numSymbols - sOfs > 0) {
-                    leastErrorDecoder(symbols.data() + sOfs, numSymbols-sOfs, _explicit?cOfs:0, PPM-(_explicit?N_HEADER_CODEWORDS:0), PPM, rdd);
                     diagonalDeterleaveSx(symbols.data() + sOfs, numSymbols-sOfs, codewords.data() + cOfs, PPM, rdd);
                     if (_explicit) {
                         Sx1272ComputeWhiteningLfsr(codewords.data() + cOfs, numCodewords - cOfs, PPM-N_HEADER_CODEWORDS, rdd);
@@ -248,7 +257,6 @@ public:
                     }
                 }
             }else{
-                leastErrorDecoder(symbols.data(), numSymbols, _explicit?N_HEADER_CODEWORDS:0, 0, PPM, rdd);
                 diagonalDeterleaveSx(symbols.data(), numSymbols, codewords.data(), PPM, rdd);
                 if (_explicit) {
                     Sx1272ComputeWhiteningLfsr(codewords.data()+N_HEADER_CODEWORDS, numCodewords-N_HEADER_CODEWORDS, 0, rdd);
@@ -256,6 +264,9 @@ public:
                 else {
                     Sx1272ComputeWhiteningLfsr(codewords.data(), numCodewords, 0, rdd);
                 }
+                /*std::cout << "-> ";
+                for (size_t i = 0; i < numCodewords ; i++) std::cout << std::setw(2) << std::hex << int(codewords.data()[i]) << " ";
+                std::cout << std::endl;*/
             }
         /*
             Pothos::Packet out;
