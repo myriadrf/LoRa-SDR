@@ -1,23 +1,25 @@
-// Copyright (c) 2016-2016 Lime Microsystems
+// Copyright (c) 2016-2018 Lime Microsystems
 // SPDX-License-Identifier: BSL-1.0
 
 #include <Pothos/Testing.hpp>
 #include <Pothos/Framework.hpp>
 #include <Pothos/Proxy.hpp>
 #include <Pothos/Remote.hpp>
-#include <Poco/JSON/Object.h>
 #include <iostream>
 #include "LoRaCodes.hpp"
+#include <json.hpp>
+
+using json = nlohmann::json;
 
 POTHOS_TEST_BLOCK("/lora/tests", test_encoder_to_decoder)
 {
     auto env = Pothos::ProxyEnvironment::make("managed");
     auto registry = env->findProxy("Pothos/BlockRegistry");
 
-    auto feeder = registry.callProxy("/blocks/feeder_source", "uint8");
-    auto encoder = registry.callProxy("/lora/lora_encoder");
-    auto decoder = registry.callProxy("/lora/lora_decoder");
-    auto collector = registry.callProxy("/blocks/collector_sink", "uint8");
+    auto feeder = registry.call("/blocks/feeder_source", "uint8");
+    auto encoder = registry.call("/lora/lora_encoder");
+    auto decoder = registry.call("/lora/lora_decoder");
+    auto collector = registry.call("/blocks/collector_sink", "uint8");
 
     std::vector<std::string> testCodingRates;
     testCodingRates.push_back("4/4");
@@ -32,17 +34,17 @@ POTHOS_TEST_BLOCK("/lora/tests", test_encoder_to_decoder)
         for (const auto &CR : testCodingRates)
         {
             std::cout << "  with CR " << CR << std::endl;
-            encoder.callVoid("setSpreadFactor", SF);
-            decoder.callVoid("setSpreadFactor", SF);
-            encoder.callVoid("setCodingRate", CR);
-            decoder.callVoid("setCodingRate", CR);
+            encoder.call("setSpreadFactor", SF);
+            decoder.call("setSpreadFactor", SF);
+            encoder.call("setCodingRate", CR);
+            decoder.call("setCodingRate", CR);
 
             //create a test plan
-            Poco::JSON::Object::Ptr testPlan(new Poco::JSON::Object());
-            testPlan->set("enablePackets", true);
-            testPlan->set("minValue", 0);
-            testPlan->set("maxValue", 255);
-            auto expected = feeder.callProxy("feedTestPlan", testPlan);
+            json testPlan;
+            testPlan["enablePackets"] = true;
+            testPlan["minValue"] = 0;
+            testPlan["maxValue"] = 255;
+            auto expected = feeder.call("feedTestPlan", testPlan.dump());
 
             //create tester topology
             {
@@ -56,7 +58,7 @@ POTHOS_TEST_BLOCK("/lora/tests", test_encoder_to_decoder)
             }
 
             std::cout << "verifyTestPlan" << std::endl;
-            collector.callVoid("verifyTestPlan", expected);
+            collector.call("verifyTestPlan", expected);
         }
     }
 }
@@ -67,14 +69,14 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
     auto registry = env->findProxy("Pothos/BlockRegistry");
 
     const size_t SF = 10;
-    auto feeder = registry.callProxy("/blocks/feeder_source", "uint8");
-    auto encoder = registry.callProxy("/lora/lora_encoder");
-    auto mod = registry.callProxy("/lora/lora_mod", SF);
-    auto adder = registry.callProxy("/comms/arithmetic", "complex_float32", "ADD");
-    auto noise = registry.callProxy("/comms/noise_source", "complex_float32");
-    auto demod = registry.callProxy("/lora/lora_demod", SF);
-    auto decoder = registry.callProxy("/lora/lora_decoder");
-    auto collector = registry.callProxy("/blocks/collector_sink", "uint8");
+    auto feeder = registry.call("/blocks/feeder_source", "uint8");
+    auto encoder = registry.call("/lora/lora_encoder");
+    auto mod = registry.call("/lora/lora_mod", SF);
+    auto adder = registry.call("/comms/arithmetic", "complex_float32", "ADD");
+    auto noise = registry.call("/comms/noise_source", "complex_float32");
+    auto demod = registry.call("/lora/lora_demod", SF);
+    auto decoder = registry.call("/lora/lora_decoder");
+    auto collector = registry.call("/blocks/collector_sink", "uint8");
 
     std::vector<std::string> testCodingRates;
     //these first few dont have error correction
@@ -88,26 +90,26 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
     {
         std::cout << "Testing with CR " << CR << std::endl;
 
-        encoder.callVoid("setSpreadFactor", SF);
-        decoder.callVoid("setSpreadFactor", SF);
-        encoder.callVoid("setCodingRate", CR);
-        decoder.callVoid("setCodingRate", CR);
-        mod.callVoid("setAmplitude", 1.0);
-        noise.callVoid("setAmplitude", 4.0);
-        noise.callVoid("setWaveform", "NORMAL");
-        mod.callVoid("setPadding", 512);
-        demod.callVoid("setMTU", 512);
+        encoder.call("setSpreadFactor", SF);
+        decoder.call("setSpreadFactor", SF);
+        encoder.call("setCodingRate", CR);
+        decoder.call("setCodingRate", CR);
+        mod.call("setAmplitude", 1.0);
+        noise.call("setAmplitude", 4.0);
+        noise.call("setWaveform", "NORMAL");
+        mod.call("setPadding", 512);
+        demod.call("setMTU", 512);
 
         //create a test plan
-        Poco::JSON::Object::Ptr testPlan(new Poco::JSON::Object());
-        testPlan->set("enablePackets", true);
-        testPlan->set("minValue", 0);
-        testPlan->set("maxValue", 255);
-        testPlan->set("minBuffers", 5);
-        testPlan->set("maxBuffers", 5);
-        testPlan->set("minBufferSize", 8);
-        testPlan->set("maxBufferSize", 128);
-        auto expected = feeder.callProxy("feedTestPlan", testPlan);
+        json testPlan;
+        testPlan["enablePackets"] = true;
+        testPlan["minValue"] = 0;
+        testPlan["maxValue"] = 255;
+        testPlan["minBuffers"] = 5;
+        testPlan["maxBuffers"] = 5;
+        testPlan["minBufferSize"] = 8;
+        testPlan["maxBufferSize"] = 128;
+        auto expected = feeder.call("feedTestPlan", testPlan.dump());
 
         //create tester topology
         {
@@ -126,6 +128,6 @@ POTHOS_TEST_BLOCK("/lora/tests", test_loopback)
 
         std::cout << "decoder dropped " << decoder.call<unsigned long long>("getDropped") << std::endl;
         std::cout << "verifyTestPlan" << std::endl;
-        collector.callVoid("verifyTestPlan", expected);
+        collector.call("verifyTestPlan", expected);
     }
 }
