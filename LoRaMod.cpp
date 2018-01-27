@@ -55,20 +55,20 @@
 class LoRaMod : public Pothos::Block
 {
 public:
-	LoRaMod(const size_t sf) :
-		N(1 << sf),
-		_ovs(1),
-		_sync(0x12),
-		_padding(1),
-		_ampl(0.3f)
+    LoRaMod(const size_t sf) :
+        N(1 << sf),
+        _ovs(1),
+        _sync(0x12),
+        _padding(1),
+        _ampl(0.3f)
     {
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaMod, setSync));
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaMod, setPadding));
         this->registerCall(this, POTHOS_FCN_TUPLE(LoRaMod, setAmplitude));
-		this->registerCall(this, POTHOS_FCN_TUPLE(LoRaMod, setOvs));
+        this->registerCall(this, POTHOS_FCN_TUPLE(LoRaMod, setOvs));
         this->setupInput(0);
         this->setupOutput(0, typeid(std::complex<float>));
-		_phaseAccum = 0;
+        _phaseAccum = 0;
     }
 
     static Block *make(const size_t sf)
@@ -91,15 +91,15 @@ public:
         _ampl = ampl;
     }
 
-	void setOvs(const size_t ovs)
-	{
-		if (ovs < 1 || ovs > 256) {
-			throw Pothos::InvalidArgumentException("LoRaDecoder::setOvs(" + std::to_string(ovs) + ")", "invalid oversampling ratio");
-		}
-		else {
-			_ovs = ovs;
-		}
-	}
+    void setOvs(const size_t ovs)
+    {
+        if (ovs < 1 || ovs > 256) {
+            throw Pothos::InvalidArgumentException("LoRaDecoder::setOvs(" + std::to_string(ovs) + ")", "invalid oversampling ratio");
+        }
+        else {
+            _ovs = ovs;
+        }
+    }
 
     void activate(void)
     {
@@ -121,13 +121,13 @@ public:
         case STATE_WAITINPUT:
         ////////////////////////////////////////////////////////////////
         {
-			if (not this->input(0)->hasMessage()) {
-				//for (i = 0; i < N; i++){
-					//samps[i] = 0;
-				//}
-				//outPort->produce(i);
-				return;
-			}
+            if (not this->input(0)->hasMessage()) {
+                //for (i = 0; i < N; i++){
+                    //samps[i] = 0;
+                //}
+                //outPort->produce(i);
+                return;
+            }
             auto msg = this->input(0)->popMessage();
             auto pkt = msg.extract<Pothos::Packet>();
             _payload = pkt.payload;
@@ -253,11 +253,11 @@ public:
 private:
     //configuration
     const size_t N;
-	size_t _ovs;
+    size_t _ovs;
     unsigned char _sync;
     size_t _padding;
     float _ampl;
-	float _phaseAccum;
+    float _phaseAccum;
     //state
     enum LoraDemodState
     {

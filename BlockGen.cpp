@@ -29,73 +29,73 @@
 class BlockGen : public Pothos::Block
 {
 public:
-	BlockGen(void) : _ws(1) {
-		this->setupOutput(0);
-		this->registerCall(this, POTHOS_FCN_TUPLE(BlockGen, setElements));
-		this->registerCall(this, POTHOS_FCN_TUPLE(BlockGen, setTrigger));
-		this->registerCall(this, POTHOS_FCN_TUPLE(BlockGen, setWordSize));
-	}
+    BlockGen(void) : _ws(1) {
+        this->setupOutput(0);
+        this->registerCall(this, POTHOS_FCN_TUPLE(BlockGen, setElements));
+        this->registerCall(this, POTHOS_FCN_TUPLE(BlockGen, setTrigger));
+        this->registerCall(this, POTHOS_FCN_TUPLE(BlockGen, setWordSize));
+    }
 
-	void setElements(const std::vector<uint32_t> &elems) {
-		_elements = elems;
-		_active = true;
-	}
+    void setElements(const std::vector<uint32_t> &elems) {
+        _elements = elems;
+        _active = true;
+    }
 
-	void setTrigger(const int value) {
-		_active = true;
-	}
+    void setTrigger(const int value) {
+        _active = true;
+    }
 
-	static Block *make(void){
-		return new BlockGen();
-	}
+    static Block *make(void){
+        return new BlockGen();
+    }
 
-	void setWordSize(const std::string &ws){
-		if (ws == "8") _ws = 0;
-		else if (ws == "16") _ws = 1;
-		else if (ws == "32") _ws = 2;
-		else throw Pothos::InvalidArgumentException("LoRaBlockGen::setWordSize(" + ws + ")", "unknown word size");
-	}
+    void setWordSize(const std::string &ws){
+        if (ws == "8") _ws = 0;
+        else if (ws == "16") _ws = 1;
+        else if (ws == "32") _ws = 2;
+        else throw Pothos::InvalidArgumentException("LoRaBlockGen::setWordSize(" + ws + ")", "unknown word size");
+    }
 
-	void activate(void){
-		_active = true;
-	}
+    void activate(void){
+        _active = true;
+    }
 
-	void work(void){
-		if (!_active) return;
-		_active = false;
-		Pothos::Packet outPkt;
-		if (0 == _ws) {
-			Pothos::BufferChunk msgBuff(typeid(uint8_t), _elements.size());
-			uint8_t *p = msgBuff.as<uint8_t *>();
-			for (size_t i = 0; i < _elements.size(); i++) {
-				p[i] = _elements[i] & 0xff;
-			}
-			outPkt.payload = msgBuff;
-		}else if (1 == _ws){
-			Pothos::BufferChunk msgBuff(typeid(uint16_t), _elements.size());
-			uint16_t *p = msgBuff.as<uint16_t *>();
-			for (size_t i = 0; i < _elements.size(); i++) {
-				p[i] = _elements[i] & 0xffff;
-			}
-			outPkt.payload = msgBuff;
-		}else {
-			Pothos::BufferChunk msgBuff(typeid(uint32_t), _elements.size());
-			uint32_t *p = msgBuff.as<uint32_t *>();
-			for (size_t i = 0; i < _elements.size(); i++) {
-				p[i] = _elements[i];
-			}
-			outPkt.payload = msgBuff;
-		}
-		
-		this->output(0)->postMessage(outPkt);
-	}
+    void work(void){
+        if (!_active) return;
+        _active = false;
+        Pothos::Packet outPkt;
+        if (0 == _ws) {
+            Pothos::BufferChunk msgBuff(typeid(uint8_t), _elements.size());
+            uint8_t *p = msgBuff.as<uint8_t *>();
+            for (size_t i = 0; i < _elements.size(); i++) {
+                p[i] = _elements[i] & 0xff;
+            }
+            outPkt.payload = msgBuff;
+        }else if (1 == _ws){
+            Pothos::BufferChunk msgBuff(typeid(uint16_t), _elements.size());
+            uint16_t *p = msgBuff.as<uint16_t *>();
+            for (size_t i = 0; i < _elements.size(); i++) {
+                p[i] = _elements[i] & 0xffff;
+            }
+            outPkt.payload = msgBuff;
+        }else {
+            Pothos::BufferChunk msgBuff(typeid(uint32_t), _elements.size());
+            uint32_t *p = msgBuff.as<uint32_t *>();
+            for (size_t i = 0; i < _elements.size(); i++) {
+                p[i] = _elements[i];
+            }
+            outPkt.payload = msgBuff;
+        }
+        
+        this->output(0)->postMessage(outPkt);
+    }
 
 private:
-	//configuration
-	bool _active;
-	size_t _ws;
-	std::vector<uint32_t> _elements;
+    //configuration
+    bool _active;
+    size_t _ws;
+    std::vector<uint32_t> _elements;
 };
 
 static Pothos::BlockRegistry registerBlockGen(
-	"/lora/block_gen", &BlockGen::make);
+    "/lora/block_gen", &BlockGen::make);

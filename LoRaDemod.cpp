@@ -218,10 +218,10 @@ public:
             {
                 total = N - value;
                 _finefreqError += fIndex;
-				std::stringstream stream;
-				stream.precision(4);
-				stream << std::fixed << "P " << fIndex;
-				_id = stream.str();
+                std::stringstream stream;
+                stream.precision(4);
+                stream << std::fixed << "P " << fIndex;
+                _id = stream.str();
  //               _id = "P " + std::to_string(fIndex);
             }
 
@@ -299,10 +299,10 @@ public:
                 _finefreqError = 0;
                 _state = STATE_FRAMESYNC;
             }
-			std::stringstream stream;
-			stream.precision(4);
-			stream << std::fixed << "S" << _symCount << " " << fIndex;
-			_id = stream.str();
+            std::stringstream stream;
+            stream.precision(4);
+            stream << std::fixed << "S" << _symCount << " " << fIndex;
+            _id = stream.str();
             //_id = "S" + std::to_string(_symCount) + " " + std::to_string(fIndex);
             
            // _finefreqError += fIndex;
