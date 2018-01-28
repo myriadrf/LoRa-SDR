@@ -10,7 +10,7 @@
         },
         {
             "name" : "MTU",
-            "value" : "15"
+            "value" : "20"
         },
         {
             "name" : "SYNC",
@@ -157,7 +157,7 @@
                 }
             ],
             "pageName" : "D&isplay",
-            "selected" : false
+            "selected" : true
         },
         {
             "graphObjects" : [
@@ -2431,7 +2431,7 @@
                 }
             ],
             "pageName" : "Modem",
-            "selected" : true
+            "selected" : false
         },
         {
             "graphObjects" : [
