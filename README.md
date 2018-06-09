@@ -45,7 +45,7 @@ and view the response in a chat box widget.
 * Next build the blocks in this repository:
 
 ```
-got clone https://github.com/myriadrf/LoRa-SDR.git
+git clone https://github.com/myriadrf/LoRa-SDR.git
 cd LoRa-SDR
 mkdir build
 cd build
