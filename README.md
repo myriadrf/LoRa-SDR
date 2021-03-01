@@ -41,8 +41,12 @@ and view the response in a chat box widget.
 
 ## Building project
 
-* First install pothos: https://github.com/pothosware/pothos/wiki
-* Next build the blocks in this repository:
+* First install Pothos: https://github.com/pothosware/pothos/wiki 
+* Install [Poco](https://pocoproject.org/) development files
+  * E.g. on Ubuntu: `sudo apt-get install libpoco-doc libpoco-dev`
+* Install [JSON for Modern C++](https://github.com/nlohmann/json) development files
+  * E.g. on Ubuntu: `sudo apt-get install -y nlohmann-json-dev`
+* Finally, build the blocks in this repository:
 
 ```
 git clone https://github.com/myriadrf/LoRa-SDR.git
